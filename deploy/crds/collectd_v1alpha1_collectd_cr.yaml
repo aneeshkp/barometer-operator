@@ -1,0 +1,7 @@
+apiVersion: collectd.barometer.com/v1alpha1
+kind: Collectd
+metadata:
+  name: example-collectd
+spec:
+  # Add fields here
+  size: 3

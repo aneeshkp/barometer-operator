@@ -1,0 +1,93 @@
+apiVersion: extensions/v1beta1
+
+kind: DaemonSet
+
+metadata:
+
+  name: collectd-node-agent
+
+  labels:
+
+    app: collectd-node-agent
+
+spec:
+
+  template:
+
+    metadata:
+
+      labels:
+
+        name: collectd-node-agent
+
+    spec:
+
+      hostNetwork: true
+
+    
+      containers:
+
+      - name: collectd
+
+        image: opnfv/barometer-collectd
+        #command: ["/opt/collectd/sbin/collectd"]
+        #args: ["-f", "-C","/etc/collectd/collectd.conf"]
+
+        securityContext:
+
+          privileged: true
+
+        volumeMounts:
+
+        - name: collectd-config-volume
+          mountPath: /opt/collectd/etc/ 
+          #mountPath: /etc/collectd
+
+        #- name: proc
+
+        #  mountPath: /hostfs
+
+        #  readOnly: true
+
+        #- name: etc
+
+        #  mountPath: /mnt/etc
+
+        #  readOnly: true
+
+      volumes:
+      - name: collectd-config-volume
+
+        configMap:
+
+          name: collectd-config
+
+          items:
+
+          - key: node-collectd.conf
+
+            path: collectd.conf
+
+      #- name: proc
+
+      #  hostPath:
+
+      #    path: /proc
+
+      #- name: root
+
+      #  hostPath:
+
+      #    path: /
+
+#      - name: etc
+
+#        hostPath:
+
+#           path: /etc
+
+#      - name: opt
+
+#        hostPath:
+
+#          path: /opt
