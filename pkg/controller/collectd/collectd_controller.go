@@ -2,9 +2,11 @@ package collectd
 
 import (
 	"context"
+	"reflect"
 
 	collectdv1alpha1 "github.com/aneeshkp/collectd-operator/pkg/apis/collectd/v1alpha1"
-
+	"github.com/aneeshkp/collectd-operator/pkg/resources/deployments"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +35,7 @@ func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
-// newReconciler returns a new reconcile.Reconciler
+// newReconciler returns a new reconciappsle.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileCollectd{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
@@ -51,6 +53,28 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	if err != nil {
 		return err
 	}
+
+	// Watch for configmap
+	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &collectdv1alpha1.Collectd{},
+	})
+
+	// TODO(user): Modify this to be the types you create that are owned by the primary resource
+	// Watch for changes to secondary resource Pods and requeue the owner Collectd
+	//err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+	//	IsController: true,
+	//	OwnerType:    &collectdv1alpha1.Collectd{},
+	//})
+	//if err != nil {
+	//	return err
+	//}
+
+	// Watch for daemonset
+	err = c.Watch(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &collectdv1alpha1.Collectd{},
+	})
 
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner Collectd
@@ -100,32 +124,62 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
-	// Define a new Pod object
-	pod := newPodForCR(instance)
-
-	// Set Collectd instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, pod, r.scheme); err != nil {
+	configMapFound := &corev1.ConfigMap{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, configMapFound)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Error(err, "ConfigMap not found... wont deploy untill config map is found")
+		instance.Status.
 		return reconcile.Result{}, err
+
 	}
 
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: pod.Name, Namespace: pod.Namespace}, found)
+	//check if deployment already exists
+	//depFound := &appsv1.Deployment{}
+	depFound := &appsv1.DaemonSet{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, depFound)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", pod.Namespace, "Pod.Name", pod.Name)
-		err = r.client.Create(context.TODO(), pod)
-		if err != nil {
+		// Define a new deployment
+		dep := deployments.NewDaemonSetForCR(instance)
+		// Set Collectd instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, dep, r.scheme); err != nil {
 			return reconcile.Result{}, err
 		}
-
-		// Pod created successfully - don't requeue
-		return reconcile.Result{}, nil
+		reqLogger.Info("Creating a new Deployment", "Daemonset", dep)
+		err = r.client.Create(context.TODO(), dep)
+		if err != nil {
+			reqLogger.Error(err, "Failed to create new Daemonset")
+			return reconcile.Result{}, err
+		}
+		// update status
+		//if reuired
+		//r.client.Status().Update(context.TODO(), instance)
+		// Deployment created successfully - return and requeue
+		return reconcile.Result{Requeue: true}, nil
 	} else if err != nil {
+		reqLogger.Error(err, "Failed to get Daemonset")
 		return reconcile.Result{}, err
 	}
 
+	
+	desiredConfigMap := &corev1.ConfigMap{} // where to ge desired configmap
+	eq := reflect.DeepEqual(configMapFound, desiredConfigMap)
+	if !eq {
+		reqLogger.Info("Collectd Config Changed. Updating...")
+		configMapFound = desiredConfigMap
+		err = r.client.Update(context.TODO(), configMapFound)
+		reqLogger.Info("Collectd Config Updated.")
+		if err != nil {
+			reqLogger.Error(err, "Failed")
+		} else {
+			err = r.client.Delete(context.TODO(), depFound)
+			return reconcile.Result{Requeue: true}, nil
+		}
+	}
+
+	//size := instance.Spec.DeploymentPlan.Size
+
 	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
+	reqLogger.Info("Skip reconcile: Daemonset  already exists", "DEP.Namespace", depFound.Namespace, "DEP.Name", depFound.Name)
 	return reconcile.Result{}, nil
 }
 

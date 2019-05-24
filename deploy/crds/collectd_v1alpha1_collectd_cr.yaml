@@ -4,4 +4,20 @@ metadata:
   name: example-collectd
 spec:
   # Add fields here
-  size: 3
+  deploymentPlan: 
+    image: opnfv/barometer-collectd
+    size: 1
+    
+  
+
+
+  
+   
+    
+
+
+
+
+
+      
+    

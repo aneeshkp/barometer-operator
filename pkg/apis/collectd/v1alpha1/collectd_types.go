@@ -13,6 +13,7 @@ type CollectdSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	DeploymentPlan DeploymentPlanType `json:"deploymentPlan,omitempty"`
 }
 
 // CollectdStatus defines the observed state of Collectd
@@ -21,6 +22,21 @@ type CollectdStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	//PodNames []string `json:"pods"`
+	//Plugins  []Plugin `json:"plugins"`
+	condition string `json:"condition,omitempty"`
+}
+
+// DeploymentPlanType defines deployment spec
+type DeploymentPlanType struct {
+	Image string `json:"image,omitempty"`
+	Size  int32  `json:"size,omitempty"`
+}
+
+// Plugin defines plugin enabled
+type Plugin struct {
+	Name    string `json:"name,omitempty"`
+	Enabled bool   `json:"enabled,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -7,6 +7,10 @@ import (
 	v1alpha1 "github.com/aneeshkp/collectd-operator/pkg/apis/collectd/v1alpha1"
 )
 
+const (
+	collectd_config_path = "opt/collectd/collectd.conf"
+)
+
 func ConfigForCollectd(m *v1alpha1.Collectd) string {
 	config := `
 	kind: ConfigMap
@@ -131,7 +135,7 @@ listener {
     host: {{.Host}}
     {{- else}}
     host: 0.0.0.0
-    {{- end}}
+    {{- end}}ask me questions
     {{- if .Port}}
     port: {{.Port}}
     {{- end}}
