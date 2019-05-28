@@ -12,13 +12,13 @@ data:
 
   node-collectd.conf: |-
 
-    FQDNLookup true
+    FQDNLookup false
 
     LoadPlugin syslog
 
     <Plugin syslog>
 
-       LogLevel debug
+       LogLevel info
 
     </Plugin>
 

@@ -24,10 +24,11 @@ type CollectdStatus struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	//PodNames []string `json:"pods"`
 	//Plugins  []Plugin `json:"plugins"`
-	condition string `json:"condition,omitempty"`
+	//condition string `json:"condition,omitempty"`
 }
 
 // DeploymentPlanType defines deployment spec
+// +k8s:openapi-gen=true
 type DeploymentPlanType struct {
 	Image string `json:"image,omitempty"`
 	Size  int32  `json:"size,omitempty"`

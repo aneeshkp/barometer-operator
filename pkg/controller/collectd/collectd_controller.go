@@ -2,7 +2,9 @@ package collectd
 
 import (
 	"context"
-	"reflect"
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
 
 	collectdv1alpha1 "github.com/aneeshkp/collectd-operator/pkg/apis/collectd/v1alpha1"
 	"github.com/aneeshkp/collectd-operator/pkg/resources/deployments"
@@ -125,13 +127,25 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	}
 
 	configMapFound := &corev1.ConfigMap{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, configMapFound)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: "collectd-config", Namespace: instance.Namespace}, configMapFound)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Error(err, "ConfigMap not found... wont deploy untill config map is found")
-		instance.Status.
+		reqLogger.Error(err, "ConfigMap not found... wont deploy untill config map is found\n")
 		return reconcile.Result{}, err
-
 	}
+	// Set Collectd instance as the owner and controller
+	if err := controllerutil.SetControllerReference(instance, configMapFound, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+	// get the sha
+	reqLogger.Info(fmt.Sprintf("****************Struct %#v\n", configMapFound))
+	out, err := json.Marshal(configMapFound)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	h := sha256.New()
+	h.Write(out)
+	currentConfigHash := fmt.Sprintf("%x", h.Sum(nil))
+	reqLogger.Info("The CurrentCOnfig Hash : " + currentConfigHash)
 
 	//check if deployment already exists
 	//depFound := &appsv1.Deployment{}
@@ -140,6 +154,11 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new deployment
 		dep := deployments.NewDaemonSetForCR(instance)
+		if dep.Annotations == nil {
+			dep.Annotations = make(map[string]string)
+		}
+		dep.Annotations["configHash"] = currentConfigHash
+
 		// Set Collectd instance as the owner and controller
 		if err := controllerutil.SetControllerReference(instance, dep, r.scheme); err != nil {
 			return reconcile.Result{}, err
@@ -147,7 +166,7 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		reqLogger.Info("Creating a new Deployment", "Daemonset", dep)
 		err = r.client.Create(context.TODO(), dep)
 		if err != nil {
-			reqLogger.Error(err, "Failed to create new Daemonset")
+			reqLogger.Error(err, "Failed to create new Daemonset\n")
 			return reconcile.Result{}, err
 		}
 		// update status
@@ -156,21 +175,22 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		// Deployment created successfully - return and requeue
 		return reconcile.Result{Requeue: true}, nil
 	} else if err != nil {
-		reqLogger.Error(err, "Failed to get Daemonset")
+		reqLogger.Error(err, "Failed to get Daemonset\n")
 		return reconcile.Result{}, err
 	}
 
-	
-	desiredConfigMap := &corev1.ConfigMap{} // where to ge desired configmap
-	eq := reflect.DeepEqual(configMapFound, desiredConfigMap)
-	if !eq {
+	deployedConfigHash := depFound.Annotations["configHash"]
+	//desiredConfigMap := &corev1.ConfigMap{} // where to ge desired configmap
+	//eq := reflect.DeepEqual(currentConfigMap, currentConfigMap)
+	reqLogger.Info("Deployed Hash : " + deployedConfigHash)
+	if deployedConfigHash != currentConfigHash {
 		reqLogger.Info("Collectd Config Changed. Updating...")
-		configMapFound = desiredConfigMap
 		err = r.client.Update(context.TODO(), configMapFound)
 		reqLogger.Info("Collectd Config Updated.")
 		if err != nil {
-			reqLogger.Error(err, "Failed")
+			reqLogger.Error(err, "Failed to update config")
 		} else {
+			reqLogger.Info("Change in configMap , delete deployment.")
 			err = r.client.Delete(context.TODO(), depFound)
 			return reconcile.Result{Requeue: true}, nil
 		}

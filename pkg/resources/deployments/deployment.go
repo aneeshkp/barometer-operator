@@ -38,6 +38,9 @@ func NewDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
+					Annotations: map[string]string{
+						"configHash": "",
+					},
 				},
 				Spec: corev1.PodSpec{
 					HostNetwork:        true,

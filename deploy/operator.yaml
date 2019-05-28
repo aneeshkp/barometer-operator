@@ -16,7 +16,7 @@ spec:
       containers:
         - name: collectd-operator
           # Replace this with the built image name
-          image: REPLACE_IMAGE
+          image: aneeshkp/collectd-operator:v0.0.3
           command:
           - collectd-operator
           imagePullPolicy: Always
