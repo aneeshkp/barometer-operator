@@ -8,10 +8,10 @@ import (
 
 	collectdv1alpha1 "github.com/aneeshkp/collectd-operator/pkg/apis/collectd/v1alpha1"
 	"github.com/aneeshkp/collectd-operator/pkg/resources/deployments"
+	"github.com/aneeshkp/collectd-operator/pkg/resources/serviceaccounts"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -78,6 +78,15 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		OwnerType:    &collectdv1alpha1.Collectd{},
 	})
 
+	// Watch for changes to secondary resource ServiceAccount and requeue the owner Interconnect
+	err = c.Watch(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &collectdv1alpha1.Collectd{},
+	})
+	if err != nil {
+		return err
+	}
+
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
 	// Watch for changes to secondary resource Pods and requeue the owner Collectd
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
@@ -126,6 +135,25 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 
+	// Check if serviceaccount already exists, if not create a new one
+	svcAccntFound := &corev1.ServiceAccount{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, svcAccntFound)
+	if err != nil && errors.IsNotFound(err) {
+		// Define a new serviceaccount
+		svcaccnt := serviceaccounts.NewServiceAccountForCR(instance)
+		controllerutil.SetControllerReference(instance, svcaccnt, r.scheme)
+		reqLogger.Info("Creating a new ServiceAccount", "ServiceAccount", svcaccnt)
+		err = r.client.Create(context.TODO(), svcaccnt)
+		if err != nil {
+			reqLogger.Error(err, "Failed to create new ServiceAccount")
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{Requeue: true}, nil
+	} else if err != nil {
+		reqLogger.Error(err, "Failed to get ServiceAccount")
+		return reconcile.Result{}, err
+	}
+
 	configMapFound := &corev1.ConfigMap{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: "collectd-config", Namespace: instance.Namespace}, configMapFound)
 	if err != nil && errors.IsNotFound(err) {
@@ -137,7 +165,6 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{}, err
 	}
 	// get the sha
-	reqLogger.Info(fmt.Sprintf("****************Struct %#v\n", configMapFound))
 	out, err := json.Marshal(configMapFound)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -145,7 +172,7 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	h := sha256.New()
 	h.Write(out)
 	currentConfigHash := fmt.Sprintf("%x", h.Sum(nil))
-	reqLogger.Info("The CurrentCOnfig Hash : " + currentConfigHash)
+	reqLogger.Info("The CurrentConfig Hash : " + currentConfigHash)
 
 	//check if deployment already exists
 	//depFound := &appsv1.Deployment{}
@@ -183,17 +210,16 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	//desiredConfigMap := &corev1.ConfigMap{} // where to ge desired configmap
 	//eq := reflect.DeepEqual(currentConfigMap, currentConfigMap)
 	reqLogger.Info("Deployed Hash : " + deployedConfigHash)
+
 	if deployedConfigHash != currentConfigHash {
-		reqLogger.Info("Collectd Config Changed. Updating...")
-		err = r.client.Update(context.TODO(), configMapFound)
-		reqLogger.Info("Collectd Config Updated.")
+		reqLogger.Info("Change in configMap , delete deployment.")
+		err = r.client.Delete(context.TODO(), depFound)
 		if err != nil {
-			reqLogger.Error(err, "Failed to update config")
-		} else {
-			reqLogger.Info("Change in configMap , delete deployment.")
-			err = r.client.Delete(context.TODO(), depFound)
-			return reconcile.Result{Requeue: true}, nil
+			reqLogger.Error(err, "Failed to update deployment")
+			return reconcile.Result{}, err
 		}
+		return reconcile.Result{Requeue: true}, nil
+
 	}
 
 	//size := instance.Spec.DeploymentPlan.Size
@@ -201,27 +227,4 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	// Pod already exists - don't requeue
 	reqLogger.Info("Skip reconcile: Daemonset  already exists", "DEP.Namespace", depFound.Namespace, "DEP.Name", depFound.Name)
 	return reconcile.Result{}, nil
-}
-
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *collectdv1alpha1.Collectd) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
-	}
 }

@@ -5,7 +5,7 @@ metadata:
   annotations:
     composition: Daemonset, Configmap
 spec:
-  group: collectd.barometer.com
+  group:  collectd.barometer.com
   names:
     kind: Collectd
     listKind: CollectdList
@@ -16,6 +16,8 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
+      required:
+        - spec
       properties:
         apiVersion:
           type: string
@@ -25,6 +27,18 @@ spec:
           type: object
         spec:
           type: object
+          properties:
+            deploymentPlan:
+              type: object
+              properties:
+                image:
+                  type: string
+                  description: The image used for the collectd deployment
+                size:
+                  type: integer
+                  minimum: 1
+                  maximum: 1
+                  description: The number of Daemonset pods to deploy
         status:
           type: object
   version: v1alpha1
