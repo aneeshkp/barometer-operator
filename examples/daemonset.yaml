@@ -32,13 +32,10 @@ spec:
         image: opnfv/barometer-collectd
         #command: ["/opt/collectd/sbin/collectd"]
         #args: ["-f", "-C","/etc/collectd/collectd.conf"]
-
         securityContext:
-
           privileged: true
 
         volumeMounts:
-
         - name: collectd-config-volume
           mountPath: /opt/collectd/etc/ 
           #mountPath: /etc/collectd
@@ -57,15 +54,10 @@ spec:
 
       volumes:
       - name: collectd-config-volume
-
         configMap:
-
           name: collectd-config
-
           items:
-
           - key: node-collectd.conf
-
             path: collectd.conf
 
       #- name: proc
