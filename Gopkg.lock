@@ -50,6 +50,24 @@
   revision = "4edf3fc415210d82efe059a6f1728aa7533f8a6f"
 
 [[projects]]
+  branch = "master"
+  digest = "1:87f387015888f0e389d4b8c36fd8c969e952a6689c83a3dfdb2f22edf7789e4b"
+  name = "github.com/aneeshkp/barometer-operator"
+  packages = [
+    "pkg/apis",
+    "pkg/apis/collectd/v1alpha1",
+    "pkg/controller",
+    "pkg/controller/collectd",
+    "pkg/resources/containers",
+    "pkg/resources/deployments",
+    "pkg/resources/serviceaccounts",
+    "pkg/utils/configs",
+    "pkg/utils/selectors",
+  ]
+  pruneopts = "NT"
+  revision = "73c5fbfd2cd2acc0ae04a4197efbfa89b7590217"
+
+[[projects]]
   digest = "1:680b63a131506e668818d630d3ca36123ff290afa0afc9f4be21940adca3f27d"
   name = "github.com/appscode/jsonpatch"
   packages = ["."]
@@ -472,6 +490,7 @@
     "pkg/scaffold/helm",
     "pkg/scaffold/input",
     "pkg/test",
+    "pkg/test/e2eutil",
     "version",
   ]
   pruneopts = "NT"
@@ -1135,13 +1154,24 @@
   analyzer-version = 1
   input-imports = [
     "github.com/RHsyseng/operator-utils/pkg/validation",
+    "github.com/aneeshkp/barometer-operator/pkg/apis",
+    "github.com/aneeshkp/barometer-operator/pkg/apis/collectd/v1alpha1",
+    "github.com/aneeshkp/barometer-operator/pkg/controller",
+    "github.com/aneeshkp/barometer-operator/pkg/controller/collectd",
+    "github.com/aneeshkp/barometer-operator/pkg/resources/containers",
+    "github.com/aneeshkp/barometer-operator/pkg/resources/deployments",
+    "github.com/aneeshkp/barometer-operator/pkg/resources/serviceaccounts",
+    "github.com/aneeshkp/barometer-operator/pkg/utils/configs",
+    "github.com/aneeshkp/barometer-operator/pkg/utils/selectors",
     "github.com/ghodss/yaml",
+    "github.com/go-logr/logr",
     "github.com/go-openapi/spec",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",
     "github.com/operator-framework/operator-sdk/pkg/metrics",
     "github.com/operator-framework/operator-sdk/pkg/test",
+    "github.com/operator-framework/operator-sdk/pkg/test/e2eutil",
     "github.com/operator-framework/operator-sdk/version",
     "github.com/spf13/pflag",
     "github.com/stretchr/testify/assert",

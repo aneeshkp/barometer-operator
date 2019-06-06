@@ -2,7 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   creationTimestamp: null
-  name: collectd-operator
+  name: barometer-operator
 rules:
 - apiGroups:
   - ""
@@ -42,7 +42,7 @@ rules:
 - apiGroups:
   - apps
   resourceNames:
-  - collectd-operator
+  - barometer-operator
   resources:
   - deployments/finalizers
   verbs:

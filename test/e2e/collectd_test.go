@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	apis "github.com/aneeshkp/collectd-operator/pkg/apis"
-	v1alpha1 "github.com/aneeshkp/collectd-operator/pkg/apis/collectd/v1alpha1"
+	apis "github.com/aneeshkp/barometer-operator/pkg/apis"
+	v1alpha1 "github.com/aneeshkp/barometer-operator/pkg/apis/collectd/v1alpha1"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	"github.com/operator-framework/operator-sdk/pkg/test/e2eutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,8 +53,8 @@ func CollectdCluster(t *testing.T) {
 	}
 	// get global framework variables
 	f := framework.Global
-	// wait for collectd-operator to be ready
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "collectd-operator", 1, retryInterval, timeout)
+	// wait for barometer-operator to be ready
+	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "barometer-operator", 1, retryInterval, timeout)
 	if err != nil {
 		t.Fatal(err)
 	}

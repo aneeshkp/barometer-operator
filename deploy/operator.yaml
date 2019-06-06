@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: collectd-operator
+  name: barometer-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: collectd-operator
+      name: barometer-operator
   template:
     metadata:
       labels:
-        name: collectd-operator
+        name: barometer-operator
     spec:
-      serviceAccountName: collectd-operator
+      serviceAccountName: barometer-operator
       containers:
-        - name: collectd-operator
+        - name: barometer-operator
           # Replace this with the built image name
-          image: aneeshkp/collectd-operator:v1.0.0
+          image: quay.io/sjakati98/barometer-operator:v1.0.0
           command:
-          - collectd-operator
+          - barometer-operator
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
@@ -30,4 +30,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "collectd-operator"
+              value: "barometer-operator"

@@ -1,11 +1,11 @@
 FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:7.6
 
-ENV OPERATOR=/usr/local/bin/collectd-operator \
+ENV OPERATOR=/usr/local/bin/barometer-operator \
     USER_UID=1001 \
-    USER_NAME=collectd-operator
+    USER_NAME=barometer-operator
 
 # install operator binary
-COPY build/_output/bin/collectd-operator ${OPERATOR}
+COPY build/_output/bin/barometer-operator ${OPERATOR}
 
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
@@ -13,3 +13,4 @@ RUN  /usr/local/bin/user_setup
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
 USER ${USER_UID}
+

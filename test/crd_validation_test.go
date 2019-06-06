@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/RHsyseng/operator-utils/pkg/validation"
-	collectdv1alpha1 "github.com/aneeshkp/collectd-operator/pkg/apis/collectd/v1alpha1"
+	collectdv1alpha1 "github.com/aneeshkp/barometer-operator/pkg/apis/collectd/v1alpha1"
 	"github.com/ghodss/yaml"
 	"github.com/stretchr/testify/assert"
 )
