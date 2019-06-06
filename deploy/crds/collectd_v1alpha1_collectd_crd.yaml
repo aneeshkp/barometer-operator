@@ -39,10 +39,53 @@ spec:
                   minimum: 1
                   maximum: 1
                   description: The number of Daemonset pods to deploy
+                configname:
+                  type: string
+                  description: THe name of collectd configmap
+              required:
+              - configname
+              - image  
         status:
           type: object
+          required:
+            - conditions
+          properties:
+            revNumber:
+              type: string
+            pods:
+              items:
+                type: string
+              type: array
+            phase:
+              type: string
+            conditions:
+              description: Conditions keeps most recent collectd conditions
+              items:
+                properties:
+                  reason:
+                    type: string
+                  transitionTime:
+                    format: date-time
+                    type: object
+                  type:
+                    type: string
+                required:
+                - type
+                type: object
+              type: array
   version: v1alpha1
   versions:
   - name: v1alpha1
     served: true
     storage: true
+  additionalPrinterColumns:
+    - name: Replicas
+      type: integer
+      description: The number of collectd launched by the operator
+      JSONPath: .spec.deploymentPlan.size
+    - name: Image
+      type: string
+      JSONPath: .spec.deploymentPlan.image
+    - name: ConfigName
+      type: string
+      JSONPath: .spec.deploymentPlan.configname

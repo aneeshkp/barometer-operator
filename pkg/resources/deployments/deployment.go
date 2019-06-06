@@ -56,11 +56,11 @@ func NewDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
 			VolumeSource: corev1.VolumeSource{
 				ConfigMap: &corev1.ConfigMapVolumeSource{
 					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "collectd-config",
+						Name: m.Spec.DeploymentPlan.ConfigName,
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  "node-collectd.conf",
+							Key:  "config",
 							Path: "collectd.conf",
 						},
 					},

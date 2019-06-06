@@ -11,13 +11,6 @@ const (
 //ConfigForCollectd  ....
 func ConfigForCollectd(m *v1alpha1.Collectd) string {
 	config := `
-	kind: ConfigMap
-    apiVersion: v1
-    metadata:
-      name: collectd-config
-      namespace: default
-    data:
-    node-collectd.conf: |-
         FQDNLookup false
         LoadPlugin syslog
         <Plugin syslog>
@@ -46,7 +39,8 @@ func ConfigForCollectd(m *v1alpha1.Collectd) string {
         # Add any other processes you wish to monitor...
         </Plugin>
     
-        #Last line (collectd requires ‘\n’ at the last line)`
+        #Last line (collectd requires ‘\n’ at the last line)
+        `
 	return config
 
 	//var buff bytes.Buffer

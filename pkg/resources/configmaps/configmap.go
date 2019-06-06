@@ -16,11 +16,11 @@ func NewConfigMapForCR(m *v1alpha1.Collectd) *corev1.ConfigMap {
 			Kind:       "ConfigMap",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
+			Name:      m.Spec.DeploymentPlan.ConfigName,
 			Namespace: m.Namespace,
 		},
 		Data: map[string]string{
-			"collectd.conf.template": config,
+			"config": config,
 		},
 	}
 

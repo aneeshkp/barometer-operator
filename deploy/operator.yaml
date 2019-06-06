@@ -16,7 +16,7 @@ spec:
       containers:
         - name: barometer-operator
           # Replace this with the built image name
-          image: quay.io/sjakati98/barometer-operator:v1.0.0
+          image: quay.io/aneeshkp/barometer-operator:v4.0.0
           command:
           - barometer-operator
           imagePullPolicy: Always

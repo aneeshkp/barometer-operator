@@ -43,29 +43,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:71aa8bdd52833ef34ce166318292c9a99967a5b7b8070658f870ae49b4a9562f"
+  digest = "1:59885960e76f85af51ee8407be4512eb53d77db5f6843420b9c1a4202082b9b1"
   name = "github.com/RHsyseng/operator-utils"
   packages = ["pkg/validation"]
   pruneopts = "NT"
-  revision = "4edf3fc415210d82efe059a6f1728aa7533f8a6f"
-
-[[projects]]
-  branch = "master"
-  digest = "1:87f387015888f0e389d4b8c36fd8c969e952a6689c83a3dfdb2f22edf7789e4b"
-  name = "github.com/aneeshkp/barometer-operator"
-  packages = [
-    "pkg/apis",
-    "pkg/apis/collectd/v1alpha1",
-    "pkg/controller",
-    "pkg/controller/collectd",
-    "pkg/resources/containers",
-    "pkg/resources/deployments",
-    "pkg/resources/serviceaccounts",
-    "pkg/utils/configs",
-    "pkg/utils/selectors",
-  ]
-  pruneopts = "NT"
-  revision = "73c5fbfd2cd2acc0ae04a4197efbfa89b7590217"
+  revision = "9b235fef216357d7620259eadb9af40a43391819"
 
 [[projects]]
   digest = "1:680b63a131506e668818d630d3ca36123ff290afa0afc9f4be21940adca3f27d"
@@ -121,15 +103,15 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:fbf41b1308f113e19ad9fbb20a62665c10c5271f487be09972e37c3120254b16"
+  digest = "1:13c005cd1497b291d3aaf711086e94f6046efb7f104db33208bff268f0187213"
   name = "github.com/emicklei/go-restful"
   packages = [
     ".",
     "log",
   ]
   pruneopts = "NT"
-  revision = "103c9496ad8f7e687b8291b56750190012091a96"
-  version = "v2.9.4"
+  revision = "6ac3b8eb89d325e5c750d77f344a6870464d03c3"
+  version = "v2.9.6"
 
 [[projects]]
   digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
@@ -538,7 +520,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:ec2a29e3bd141038ae5c3d3a4f57db0c341fcc1d98055a607aedd683aed124ee"
+  digest = "1:2e0311ed50c341b1db895df8a48ef719fc66699ebc35b80048f82b99f31a3f2d"
   name = "github.com/prometheus/client_golang"
   packages = [
     "prometheus",
@@ -546,8 +528,8 @@
     "prometheus/promhttp",
   ]
   pruneopts = "NT"
-  revision = "505eaef017263e299324067d40ca2c48f6a2cf50"
-  version = "v0.9.2"
+  revision = "50c4339db732beb2165735d2cde0bff78eb3c5a5"
+  version = "v0.9.3"
 
 [[projects]]
   branch = "master"
@@ -558,7 +540,7 @@
   revision = "fd36f4220a901265f90734c3183c5f0c91daa0b8"
 
 [[projects]]
-  digest = "1:d58e080134e5ca08ba6beebade31362d5f56e64fdb6dd649ec8b5e52445e8489"
+  digest = "1:70a61f24e419a65b6f030b73f66b620da038e57089165577bdf945f3c3bb8b51"
   name = "github.com/prometheus/common"
   packages = [
     "expfmt",
@@ -566,19 +548,19 @@
     "model",
   ]
   pruneopts = "NT"
-  revision = "1ba88736f028e37bc17328369e94a537ae9e0234"
-  version = "v0.4.0"
+  revision = "17f5ca1748182ddf24fc33a5a7caaaf790a52fcc"
+  version = "v0.4.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:bca8581280a9ba8187941c57f08a89baeaeb87e97f3f093c9a59928425e7bde3"
+  digest = "1:97d1394f698fbb4694376afc8cda6c63558cdcfbca58fc4b2426d3ff4bb0b133"
   name = "github.com/prometheus/procfs"
   packages = [
     ".",
     "internal/fs",
   ]
   pruneopts = "NT"
-  revision = "5867b95ac084bbfee6ea16595c4e05ab009021da"
+  revision = "833678b5bb319f2d20a475cb165c6cc59c2cc77c"
+  version = "v0.0.2"
 
 [[projects]]
   digest = "1:a4644e85e1f29f9825a4e61dcdd8244fe7c4db02eead3f508d5a5bdf7924dbbd"
@@ -668,7 +650,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:af1fe3e40e947f75bee6d1f3b3610fa859079ddc4706634d5360213d7e70b954"
+  digest = "1:c30df5de56c16819103cf2b843cf25dc48754955d99d4844583b22c09a126acb"
   name = "golang.org/x/crypto"
   packages = [
     "cast5",
@@ -682,11 +664,11 @@
     "ssh/terminal",
   ]
   pruneopts = "NT"
-  revision = "22d7a77e9e5f409e934ed268692e56707cd169e5"
+  revision = "f99c8df09eb5bff426315721bfa5f16a99cad32c"
 
 [[projects]]
   branch = "master"
-  digest = "1:4b41a35ff9b7fa818d63044d95067e361580f248793cd1795dc999c73ad7b114"
+  digest = "1:4e21d71eeb4ffbe267dfede6aab2493b7a2f15fdae2b84b8c6bce4920b64af48"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -697,11 +679,11 @@
     "idna",
   ]
   pruneopts = "NT"
-  revision = "3ec19112720433827bbce8be9342797f5a6aaaf9"
+  revision = "1492cefac77f61bc789c00f41ead8f8d7307cd21"
 
 [[projects]]
   branch = "master"
-  digest = "1:54c605b4036ec49dbc4c887969128d5ee68140cf0bbec46e67cbb2497e69c15e"
+  digest = "1:39b3fcfdc10f07969cf1e9fcb901bbb600083fff9880739f4ea596b48656c5a1"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
@@ -711,18 +693,18 @@
     "jwt",
   ]
   pruneopts = "NT"
-  revision = "9f3314589c9a9136388751d9adae6b0ed400978a"
+  revision = "0f29369cfe4552d0e4bcddc57cc75f4d7e672a33"
 
 [[projects]]
   branch = "master"
-  digest = "1:fed3cf4cd293f6895e3dab9bbc99f097c813e65826faad148b7e88b6401ab37d"
+  digest = "1:a921671356ea412a3fb4c73733ae1f179564a1d56f1a3b10ec3b322387c467ee"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "NT"
-  revision = "06a5c494443846f634903706cba8f993687d3ff5"
+  revision = "5da285871e9c6a1c3acade75bea3282d33f55ebd"
 
 [[projects]]
   digest = "1:348fa8283a7c60b5b71ce04d27b37f7c0fce552d4d0b463b5b3ebbd1840d3f1a"
@@ -760,7 +742,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e5584a8350dddfcd87e1fd386fe25d4397aabece0a6a8b5885f49a7d9af196a4"
+  digest = "1:690c6d8dd7e685933a7e1b501603137bcaa227d622faf8999492e59b7fd2047a"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -772,11 +754,12 @@
     "imports",
     "internal/fastwalk",
     "internal/gopathwalk",
+    "internal/imports",
     "internal/module",
     "internal/semver",
   ]
   pruneopts = "NT"
-  revision = "ce09bef8aae21fe8b969f02e519f1e28826ead5d"
+  revision = "0139d5756a7dfc6302f04af275a50cbc37ea0153"
 
 [[projects]]
   digest = "1:d85bd4497eba4bba5620f30ba3b7bc3e2d5d73b85dd494eeb6ad79c73cdc23a3"
@@ -1066,12 +1049,12 @@
   version = "v2.13.0"
 
 [[projects]]
-  digest = "1:300621bb4f98c1440b7298b376058928baf1fceb221a7f4520a92b7b9919bb3d"
+  digest = "1:507ee72b30eee7ecb34253592d108a01e68bf67b9cab25e0dcec7e3ee77cf8c0"
   name = "k8s.io/klog"
   packages = ["."]
   pruneopts = "NT"
-  revision = "e531227889390a39d9533dde61f590fe9f4b0035"
-  version = "v0.3.0"
+  revision = "78315d914a8af2453db4864e69230b647b1ff711"
+  version = "v0.3.2"
 
 [[projects]]
   digest = "1:c48a795cd7048bb1888273bc604b6e69b22f9b8089c3df65f77cc527757b515c"
@@ -1154,15 +1137,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/RHsyseng/operator-utils/pkg/validation",
-    "github.com/aneeshkp/barometer-operator/pkg/apis",
-    "github.com/aneeshkp/barometer-operator/pkg/apis/collectd/v1alpha1",
-    "github.com/aneeshkp/barometer-operator/pkg/controller",
-    "github.com/aneeshkp/barometer-operator/pkg/controller/collectd",
-    "github.com/aneeshkp/barometer-operator/pkg/resources/containers",
-    "github.com/aneeshkp/barometer-operator/pkg/resources/deployments",
-    "github.com/aneeshkp/barometer-operator/pkg/resources/serviceaccounts",
-    "github.com/aneeshkp/barometer-operator/pkg/utils/configs",
-    "github.com/aneeshkp/barometer-operator/pkg/utils/selectors",
     "github.com/ghodss/yaml",
     "github.com/go-logr/logr",
     "github.com/go-openapi/spec",

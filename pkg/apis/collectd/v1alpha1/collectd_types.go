@@ -4,11 +4,44 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+//PhaseType ...
+type PhaseType string
+
+// Const for phasetype
+const (
+	CollectdPhaseNone     PhaseType = ""
+	CollectdPhaseCreating           = "Creating"
+	CollectdPhaseRunning            = "Running"
+	CollectdPhaseFailed             = "Failed"
+)
+
+// ConditionType ...
+type ConditionType string
+
+//Constant for COndition Type
+const (
+	CollectdConditionProvisioning ConditionType = "Provisioning"
+	CollectdConditionDeployed     ConditionType = "Deployed"
+	CollectdConditionScalingUp    ConditionType = "ScalingUp"
+	CollectdConditionScalingDown  ConditionType = "ScalingDown"
+	CollectdConditionUpgrading    ConditionType = "Upgrading"
+)
+
+//CollectdCondition ...
+type CollectdCondition struct {
+	Type           ConditionType `json:"type"`
+	TransitionTime metav1.Time   `json:"transitionTime,omitempty"`
+	Reason         string        `json:"reason,omitempty"`
+}
+
+// DeploymentPlanType defines deployment spec
+type DeploymentPlanType struct {
+	Image      string `json:"image,omitempty"`
+	Size       int32  `json:"size,omitempty"`
+	ConfigName string `json:"configname,omitempty"`
+}
 
 // CollectdSpec defines the desired state of Collectd
-// +k8s:openapi-gen=true
 type CollectdSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -17,7 +50,6 @@ type CollectdSpec struct {
 }
 
 // CollectdStatus defines the observed state of Collectd
-// +k8s:openapi-gen=true
 type CollectdStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -25,21 +57,15 @@ type CollectdStatus struct {
 	//PodNames []string `json:"pods"`
 	//Plugins  []Plugin `json:"plugins"`
 	//condition string `json:"condition,omitempty"`
+	Phase     PhaseType `json:"phase,omitempty"`
+	RevNumber string    `json:"revNumber,omitempty"`
+	PodNames  []string  `json:"pods"`
+
+	// Conditions keeps most recent interconnect conditions
+	Conditions []CollectdCondition `json:"conditions"`
 }
 
-// DeploymentPlanType defines deployment spec
-// +k8s:openapi-gen=true
-type DeploymentPlanType struct {
-	Image string `json:"image,omitempty"`
-	Size  int32  `json:"size,omitempty"`
-}
-
-// Plugin defines plugin enabled
-type Plugin struct {
-	Name    string `json:"name,omitempty"`
-	Enabled bool   `json:"enabled,omitempty"`
-}
-
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Collectd is the Schema for the collectds API

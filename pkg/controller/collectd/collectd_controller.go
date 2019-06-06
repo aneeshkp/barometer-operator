@@ -7,12 +7,14 @@ import (
 	"fmt"
 
 	collectdv1alpha1 "github.com/aneeshkp/barometer-operator/pkg/apis/collectd/v1alpha1"
+	"github.com/aneeshkp/barometer-operator/pkg/resources/configmaps"
 	"github.com/aneeshkp/barometer-operator/pkg/resources/deployments"
 	"github.com/aneeshkp/barometer-operator/pkg/resources/serviceaccounts"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,7 +27,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const maxConditions = 6
+
 var log = logf.Log.WithName("controller_collectd")
+
+//ReturnValues ...
+type ReturnValues struct {
+	hash256String string
+	reQueue       bool
+	err           error
+}
 
 /**
 * USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
@@ -124,6 +135,7 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 
 	// Fetch the Collectd instance
 	instance := &collectdv1alpha1.Collectd{}
+
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -135,21 +147,35 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
-
-	// Check if serviceaccount already exists, if not create a new one
-	if r.ReconcileServiceAccount(instance, reqLogger) != nil {
-		return reconcile.Result{}, err
+	reqLogger.Info("CONFIG---------------" + instance.Spec.DeploymentPlan.ConfigName)
+	// Assign the generated resource version to the status
+	if instance.Status.RevNumber == "" {
+		instance.Status.RevNumber = instance.ObjectMeta.ResourceVersion
+		r.UpdateCondition(instance, "provision spec to desired state", reqLogger)
 	}
 
-	currentConfigHash, err := r.ReconcileConfigMap(instance, reqLogger)
-	if err != nil {
+	// Check if serviceaccount already exists, if not create a new one
+	returnValues := r.ReconcileServiceAccount(instance, reqLogger)
+	if returnValues.err != nil {
 		return reconcile.Result{}, err
+	} else if returnValues.reQueue {
+		return reconcile.Result{Requeue: true}, nil
+	}
+
+	returnValues = r.ReconcileConfigMap(instance, reqLogger)
+	if returnValues.err != nil {
+		return reconcile.Result{}, err
+	} else if returnValues.reQueue {
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	//desiredConfigMap := &corev1.ConfigMap{} // where to ge desired configmap
 	//eq := reflect.DeepEqual(currentConfigMap, currentConfigMap)
-	if r.ReconcileDeployment(instance, currentConfigHash, reqLogger) != nil {
+	returnValues = r.ReconcileDeployment(instance, returnValues.hash256String, reqLogger)
+	if returnValues.err != nil {
 		return reconcile.Result{}, err
+	} else if returnValues.reQueue {
+		return reconcile.Result{Requeue: true}, nil
 	}
 
 	//size := instance.Spec.DeploymentPlan.Size
@@ -159,13 +185,36 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	return reconcile.Result{}, nil
 }
 
+func addCondition(conditions []collectdv1alpha1.CollectdCondition, condition collectdv1alpha1.CollectdCondition) []collectdv1alpha1.CollectdCondition {
+	size := len(conditions) + 1
+	first := 0
+	if size > maxConditions {
+		first = size - maxConditions
+	}
+	return append(conditions, condition)[first:size]
+}
+
+//UpdateCondition ...
+func (r *ReconcileCollectd) UpdateCondition(instance *collectdv1alpha1.Collectd, reason string, reqLogger logr.Logger) error {
+	// update status
+	// update status
+	condition := collectdv1alpha1.CollectdCondition{
+		Type:           collectdv1alpha1.CollectdConditionProvisioning,
+		Reason:         reason,
+		TransitionTime: metav1.Now(),
+	}
+	instance.Status.Conditions = addCondition(instance.Status.Conditions, condition)
+	r.client.Status().Update(context.TODO(), instance)
+	return nil
+}
+
 //ReconcileServiceAccount  ...
-func (r *ReconcileCollectd) ReconcileServiceAccount(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) error {
+func (r *ReconcileCollectd) ReconcileServiceAccount(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) ReturnValues {
 	svcaccnt := serviceaccounts.NewServiceAccountForCR(instance)
 
 	// Set OutgoingPortal instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, svcaccnt, r.scheme); err != nil {
-		return err
+		return ReturnValues{"", false, err}
 	}
 	svcAccntFound := &corev1.ServiceAccount{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: svcaccnt.Name, Namespace: svcaccnt.Namespace}, svcAccntFound)
@@ -174,83 +223,103 @@ func (r *ReconcileCollectd) ReconcileServiceAccount(instance *collectdv1alpha1.C
 		err = r.client.Create(context.TODO(), svcaccnt)
 		if err != nil {
 			reqLogger.Error(err, "Failed to create new ServiceAccount")
-			return err
+			return ReturnValues{"", false, err}
 		}
-		return nil
+		return ReturnValues{"", true, err}
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get ServiceAccount")
-		return err
+		return ReturnValues{"", false, err}
 	}
 	// Secret already exists - don't requeue
 	reqLogger.Info("Skip reconcile: SvcAccnt already exists", "svcaccnt.Namespace",
 		svcAccntFound.Namespace, "svcaccnt.Name", svcAccntFound.Name)
-	return nil
+	return ReturnValues{"", false, nil}
 }
 
 //ReconcileConfigMap  ../
-func (r *ReconcileCollectd) ReconcileConfigMap(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) (string, error) {
+func (r *ReconcileCollectd) ReconcileConfigMap(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) ReturnValues {
 	configMapFound := &corev1.ConfigMap{}
 
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: "collectd-config", Namespace: instance.Namespace}, configMapFound)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentPlan.ConfigName, Namespace: instance.Namespace}, configMapFound)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Error(err, "ConfigMap not found... wont deploy untill config map is found\n")
-		return "", err
+		reqLogger.Info("ConfigMap not found... Creating default configmap :" + instance.Spec.DeploymentPlan.ConfigName + "\n")
+		configmap := configmaps.NewConfigMapForCR(instance)
+		if err := controllerutil.SetControllerReference(instance, configmap, r.scheme); err != nil {
+			reqLogger.Info("ERROR createing owner to config")
+			return ReturnValues{"", false, err}
+		}
+		err = r.client.Create(context.TODO(), configmap)
+		if err != nil {
+			r.UpdateCondition(instance, "Error creating default Configuration", reqLogger)
+			reqLogger.Error(err, "ERROR createing config\n")
+			return ReturnValues{"", false, err}
+		}
+
+		return ReturnValues{"", true, nil}
+	} else if err != nil {
+		reqLogger.Error(err, "Error loading  configmap\n")
+		return ReturnValues{"", false, err}
 	}
-	// Set Collectd instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, configMapFound, r.scheme); err != nil {
-		return "", err
-	}
+
 	// get the sha
 	out, err := json.Marshal(configMapFound)
 	if err != nil {
-		return "", err
+		return ReturnValues{"", false, err}
 	}
 	h := sha256.New()
-	h.Write(out)
+	_, err = h.Write(out)
+	if err != nil {
+		reqLogger.Info("ERROR reading config hah")
+		return ReturnValues{"", false, err}
+	}
 	currentConfigHash := fmt.Sprintf("%x", h.Sum(nil))
-	return currentConfigHash, nil
+	reqLogger.Info("Skip reconcile: Configmap already exists", "Configmap.Namespace", configMapFound.Namespace, "ConfigMap.Name", configMapFound.Name)
+
+	return ReturnValues{currentConfigHash, false, nil}
 }
 
 //ReconcileDeployment  ...
-func (r *ReconcileCollectd) ReconcileDeployment(instance *collectdv1alpha1.Collectd, currentConfigHash string, reqLogger logr.Logger) error {
-	// Define a new deployment
-	dep := deployments.NewDaemonSetForCR(instance)
-	if err := controllerutil.SetControllerReference(instance, dep, r.scheme); err != nil {
-		return err
-	}
+func (r *ReconcileCollectd) ReconcileDeployment(instance *collectdv1alpha1.Collectd, currentConfigHash string, reqLogger logr.Logger) ReturnValues {
 	//check if deployment already exists
-	//depFound := &appsv1.Deployment{}
 	depFound := &appsv1.DaemonSet{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, depFound)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, depFound)
 	if err != nil && errors.IsNotFound(err) {
+		// Define a new deployment
+		dep := deployments.NewDaemonSetForCR(instance)
+		if err := controllerutil.SetControllerReference(instance, dep, r.scheme); err != nil {
+			return ReturnValues{"", false, err}
+		}
 		reqLogger.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		r.UpdateCondition(instance, "Created Default Configuration", reqLogger)
+
 		// Define a new deployment
 		if dep.Annotations == nil {
 			dep.Annotations = make(map[string]string)
 		}
 		dep.Annotations["configHash"] = currentConfigHash
-
-		reqLogger.Info("Creating a new Deployment", "Daemonset", dep)
 		err = r.client.Create(context.TODO(), dep)
 		if err != nil {
-			return err
+			return ReturnValues{"", false, err}
 		}
-
+		r.UpdateCondition(instance, "Creating new deployment", reqLogger)
+		return ReturnValues{"", true, nil}
 	} else if err != nil {
 		reqLogger.Error(err, "Failed to get Daemonset\n")
-		return err
+		return ReturnValues{"", false, err}
 	}
 	// Deployment already exists - don't requeue
 	reqLogger.Info("Skip reconcile: Deployment already exists", "Deployment.Namespace", depFound.Namespace, "Deployment.Name", depFound.Name)
 	deployedConfigHash := depFound.Annotations["configHash"]
-
 	if deployedConfigHash != currentConfigHash {
+		r.UpdateCondition(instance, "Configuration changed", reqLogger)
 		reqLogger.Info("Change in configMap , delete deployment.")
 		err = r.client.Delete(context.TODO(), depFound)
+		r.UpdateCondition(instance, "Deleteing daemonset for config updates", reqLogger)
 		if err != nil {
 			reqLogger.Error(err, "Failed to update deployment")
-			return err
+			return ReturnValues{"", false, err}
 		}
+		return ReturnValues{"", true, nil}
 	}
-	return nil
+	return ReturnValues{"", false, nil}
 }
