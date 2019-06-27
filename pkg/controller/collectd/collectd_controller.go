@@ -29,7 +29,10 @@ import (
 
 const maxConditions = 6
 
-var log = logf.Log.WithName("controller_collectd")
+var OperatorName = "UNKNOW"
+var (
+	log = logf.Log.WithName("controller_collectd")
+)
 
 //ReturnValues ...
 type ReturnValues struct {
@@ -68,21 +71,87 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// Watch for configmap
-	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
+	// TODO(user): Modify this to be the types you create that are owned by the primary resource
+	// Watch for changes to secondary resource Pods and requeue the owner Collectd
+	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &collectdv1alpha1.Collectd{},
 	})
+	if err != nil {
+		return err
+	}
+	/*	mapFn := handler.ToRequestsFunc(
+			func(a handler.MapObject) []reconcile.Request {
+				return []reconcile.Request{
+					{NamespacedName: types.NamespacedName{
+						Name:      a.Meta.GetName() + "-1",
+						Namespace: a.Meta.GetNamespace(),
+					}},
+					{NamespacedName: types.NamespacedName{
+						Name:      a.Meta.GetName() + "-2",
+						Namespace: a.Meta.GetNamespace(),
+					}},
+				}
+			})
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Collectd
-	//err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-	//	IsController: true,
-	//	OwnerType:    &collectdv1alpha1.Collectd{},
-	//})
-	//if err != nil {
-	//	return err
-	//}
+		p := predicate.Funcs{
+			UpdateFunc: func(e event.UpdateEvent) bool {
+				// The object doesn't contain label "foo", so the event will be
+				// ignored.
+				if _, ok := e.MetaOld.GetLabels()["foo"]; !ok {
+					return false
+				}
+				return e.ObjectOld != e.ObjectNew
+			},
+			CreateFunc: func(e event.CreateEvent) bool {
+				if _, ok := e.Meta.GetLabels()["foo"]; !ok {
+					return false
+				}
+				return true
+			},
+		}
+	*/
+	configFn := handler.ToRequestsFunc(func(configMapObject handler.MapObject) []reconcile.Request {
+		instance := &collectdv1alpha1.Collectd{}
+		//instances := &collectdv1alpha1.CollectdList{}
+		depKey := types.NamespacedName{Namespace: configMapObject.Meta.GetNamespace(), Name: OperatorName}
+		log.Info("OPERATOR_NAME")
+		log.Info(OperatorName)
+		err := mgr.GetClient().Get(context.TODO(), depKey, instance)
+		if err != nil {
+			log.Info("Could not find collectd instance, for reconciling configmap.")
+			return []reconcile.Request{}
+		}
+		return []reconcile.Request{
+			{NamespacedName: types.NamespacedName{
+				Name:      OperatorName,
+				Namespace: configMapObject.Meta.GetNamespace(),
+			}},
+		}
+		/*err = mgr.GetClient().List(context.TODO(), &client.ListOptions{LabelSelector: selectors.ResourcesByApplicationKey()}, instances)
+
+		if err != nil {
+			log.Info("Could not find collectd instance, unable to reconcile configmap")
+			return []reconcile.Request{}
+		}
+		var keys []reconcile.Request
+		log.Info(strconv.Itoa(len(instances.Items)))
+		for _, inst := range instances.Items {
+			log.Info("Configuration changed adding to reconcile")
+			if inst.Spec.DeploymentPlan.ConfigName == configMapObject.Meta.GetName() {
+				keys = append(keys, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      inst.GetName(),
+						Namespace: inst.GetNamespace(),
+					},
+				})
+			}
+
+		}
+
+		return keys*/
+
+	})
 
 	// Watch for daemonset
 	err = c.Watch(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
@@ -105,6 +174,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		IsController: true,
 		OwnerType:    &collectdv1alpha1.Collectd{},
 	})
+	if err != nil {
+		return err
+	}
+
+	//watch for secondary resources not owned by CR
+	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestsFromMapFunc{
+		ToRequests: configFn})
+
 	if err != nil {
 		return err
 	}
@@ -147,7 +224,7 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
-	reqLogger.Info("CONFIG---------------" + instance.Spec.DeploymentPlan.ConfigName)
+	OperatorName = instance.GetName()
 	// Assign the generated resource version to the status
 	if instance.Status.RevNumber == "" {
 		instance.Status.RevNumber = instance.ObjectMeta.ResourceVersion
@@ -161,16 +238,22 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	} else if returnValues.reQueue {
 		return reconcile.Result{Requeue: true}, nil
 	}
+	/*returnValues = r.ReconcileConfigMap(instance, reqLogger)
+	if returnValues.err != nil {
+		return reconcile.Result{}, err
+	} else if returnValues.reQueue {
+		return reconcile.Result{Requeue: true}, nil
+	}*/
 
-	returnValues = r.ReconcileConfigMap(instance, reqLogger)
+	returnValues = r.CheckForConfigMap(instance, reqLogger)
 	if returnValues.err != nil {
 		return reconcile.Result{}, err
 	} else if returnValues.reQueue {
 		return reconcile.Result{Requeue: true}, nil
 	}
-
 	//desiredConfigMap := &corev1.ConfigMap{} // where to ge desired configmap
 	//eq := reflect.DeepEqual(currentConfigMap, currentConfigMap)
+	//returnValues = r.ReconcileDeployment(instance, returnValues.hash256String, reqLogger)
 	returnValues = r.ReconcileDeployment(instance, returnValues.hash256String, reqLogger)
 	if returnValues.err != nil {
 		return reconcile.Result{}, err
@@ -236,13 +319,48 @@ func (r *ReconcileCollectd) ReconcileServiceAccount(instance *collectdv1alpha1.C
 	return ReturnValues{"", false, nil}
 }
 
-//ReconcileConfigMap  ../
+//CheckForConfigMap  ..If configmap doesn't exist , do not deploy/
+func (r *ReconcileCollectd) CheckForConfigMap(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) ReturnValues {
+	configMapFound := &corev1.ConfigMap{}
+
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentPlan.ConfigName, Namespace: instance.Namespace}, configMapFound)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("ConfigMap not found...  deployment will continue with default configurations. ")
+		return ReturnValues{"", false, nil}
+	} else if err != nil {
+		reqLogger.Error(err, "Error loading  configmap\n")
+		return ReturnValues{"", false, err}
+	}
+
+	// get the sha
+	/*out, err := json.Marshal(configMapFound.Data)
+	if err != nil {
+		return ReturnValues{"", false, err}
+	}
+	h := sha256.New()
+	_, err = h.Write(out)
+	if err != nil {
+		reqLogger.Info("ERROR reading config ")
+		return ReturnValues{"", false, err}
+	}
+	currentConfigHash := fmt.Sprintf("%x", h.Sum(nil))
+	*/
+	// configMap resource version will be an env in Che deployment to easily update it when a ConfigMap changes
+	// which will automatically trigger Che rolling update
+	currentConfigVersion := configMapFound.ResourceVersion
+
+	reqLogger.Info("Configmap exists", "Configmap.Namespace", configMapFound.Namespace, "ConfigMap.Name", configMapFound.Name)
+
+	return ReturnValues{currentConfigVersion, false, nil}
+}
+
+//ReconcileConfigMap  ..DON'T use this function for now... /
 func (r *ReconcileCollectd) ReconcileConfigMap(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) ReturnValues {
 	configMapFound := &corev1.ConfigMap{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentPlan.ConfigName, Namespace: instance.Namespace}, configMapFound)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("ConfigMap not found... Creating default configmap :" + instance.Spec.DeploymentPlan.ConfigName + "\n")
+		reqLogger.Info("ConfigMap not found...  default config issued  :" + instance.Spec.DeploymentPlan.ConfigName + "\n")
 		configmap := configmaps.NewConfigMapForCR(instance)
 		if err := controllerutil.SetControllerReference(instance, configmap, r.scheme); err != nil {
 			reqLogger.Info("ERROR createing owner to config")
@@ -262,7 +380,7 @@ func (r *ReconcileCollectd) ReconcileConfigMap(instance *collectdv1alpha1.Collec
 	}
 
 	// get the sha
-	out, err := json.Marshal(configMapFound)
+	out, err := json.Marshal(configMapFound.Data)
 	if err != nil {
 		return ReturnValues{"", false, err}
 	}
@@ -279,28 +397,38 @@ func (r *ReconcileCollectd) ReconcileConfigMap(instance *collectdv1alpha1.Collec
 }
 
 //ReconcileDeployment  ...
-func (r *ReconcileCollectd) ReconcileDeployment(instance *collectdv1alpha1.Collectd, currentConfigHash string, reqLogger logr.Logger) ReturnValues {
+func (r *ReconcileCollectd) ReconcileDeployment(instance *collectdv1alpha1.Collectd, cmVersion string, reqLogger logr.Logger) ReturnValues {
+
 	//check if deployment already exists
 	depFound := &appsv1.DaemonSet{}
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, depFound)
+	dep := &appsv1.DaemonSet{}
+
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new deployment
-		dep := deployments.NewDaemonSetForCR(instance)
+		if cmVersion == "" {
+			dep = deployments.NewDefaultDaemonSetForCR(instance)
+			reqLogger.Info("Creating a new Deployment with default configurations (use configmap to modify collectd conf)", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		} else {
+			dep = deployments.NewDaemonSetForCR(instance, cmVersion)
+			reqLogger.Info("Creating a new Deployment with configMap", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+		}
+
 		if err := controllerutil.SetControllerReference(instance, dep, r.scheme); err != nil {
 			return ReturnValues{"", false, err}
 		}
-		reqLogger.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
-		r.UpdateCondition(instance, "Created Default Configuration", reqLogger)
 
 		// Define a new deployment
 		if dep.Annotations == nil {
 			dep.Annotations = make(map[string]string)
 		}
-		dep.Annotations["configHash"] = currentConfigHash
+		dep.Annotations["configversion"] = cmVersion
 		err = r.client.Create(context.TODO(), dep)
 		if err != nil {
+			reqLogger.Error(err, "Error creating deployment for Deployment.Namespace"+depFound.Namespace+"Deployment.Name"+depFound.Name)
 			return ReturnValues{"", false, err}
 		}
+
 		r.UpdateCondition(instance, "Creating new deployment", reqLogger)
 		return ReturnValues{"", true, nil}
 	} else if err != nil {
@@ -309,16 +437,20 @@ func (r *ReconcileCollectd) ReconcileDeployment(instance *collectdv1alpha1.Colle
 	}
 	// Deployment already exists - don't requeue
 	reqLogger.Info("Skip reconcile: Deployment already exists", "Deployment.Namespace", depFound.Namespace, "Deployment.Name", depFound.Name)
-	deployedConfigHash := depFound.Annotations["configHash"]
-	if deployedConfigHash != currentConfigHash {
+	deployedCmVersion := depFound.Annotations["configversion"]
+	reqLogger.Info("CurrentConfigVersion: " + cmVersion)
+	reqLogger.Info("deployedConfigVersion: " + deployedCmVersion)
+
+	if cmVersion != deployedCmVersion {
 		r.UpdateCondition(instance, "Configuration changed", reqLogger)
 		reqLogger.Info("Change in configMap , delete deployment.")
 		err = r.client.Delete(context.TODO(), depFound)
-		r.UpdateCondition(instance, "Deleteing daemonset for config updates", reqLogger)
+
 		if err != nil {
-			reqLogger.Error(err, "Failed to update deployment")
+			reqLogger.Error(err, "Failed to delete deployment")
 			return ReturnValues{"", false, err}
 		}
+		r.UpdateCondition(instance, "Deleteing daemonset for config updates.", reqLogger)
 		return ReturnValues{"", true, nil}
 	}
 	return ReturnValues{"", false, nil}

@@ -2,25 +2,11 @@ apiVersion: collectd.barometer.com/v1alpha1
 kind: Collectd
 metadata:
   name: barometer-collectd-ds
+  labels:
+    app: collectd
 spec:
   # Add fields here
   deploymentPlan: 
     image: opnfv/barometer-collectd
     size: 1
-    configname: collectd-ds-config
-  
-    
-    
-  
-
-
-  
-   
-    
-
-
-
-
-
-      
-    
+    configname: collectd-ds-config    

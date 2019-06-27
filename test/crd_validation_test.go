@@ -1,5 +1,6 @@
 package test
 
+//https://github.com/operator-framework/operator-sdk/blob/master/doc/user/unit-testing.md
 import (
 	"io/ioutil"
 	"strings"

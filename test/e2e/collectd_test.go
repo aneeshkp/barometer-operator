@@ -22,6 +22,7 @@ var (
 )
 
 func TestCollectd(t *testing.T) {
+	//Register with framework schema
 	collectdList := &v1alpha1.CollectdList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Collectd",

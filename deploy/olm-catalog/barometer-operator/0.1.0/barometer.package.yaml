@@ -1,0 +1,5 @@
+#! package-manifest: deploy/olm-catalog/barometer-operator/0.1.0/barometer-operator.v0.1.0.clusterserviceversion.yaml
+packageName: barometer-operator
+channels:
+  - name: beta
+    currentCSV: barometer-operator.v0.1.0

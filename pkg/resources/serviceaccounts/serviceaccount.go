@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Create NewServiceAccountForCR method to create serviceaccount
+//NewServiceAccountForCR ... Create NewServiceAccountForCR method to create serviceaccount
 func NewServiceAccountForCR(m *v1alpha1.Collectd) *corev1.ServiceAccount {
 	serviceaccount := &corev1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{

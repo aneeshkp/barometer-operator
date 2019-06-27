@@ -1,0 +1,116 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[{"apiVersion":"collectd.barometer.com/v1alpha1","kind":"Collectd","metadata":{"labels":{"app":"collectd"},"name":"barometer-collectd-ds"},"spec":{"deploymentPlan":{"configname":"collectd-ds-config","image":"opnfv/barometer-collectd","size":1}}}]'
+    capabilities: Basic Install
+  name: barometer-operator.v0.1.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - kind: Collectd
+      name: collectds.collectd.barometer.com
+      version: v1alpha1
+  description: Placeholder description
+  displayName: Barometer Operator
+  install:
+    spec:
+      deployments:
+      - name: barometer-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: barometer-operator
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                name: barometer-operator
+            spec:
+              containers:
+              - command:
+                - barometer-operator
+                env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: barometer-operator
+                image: quay.io/aneeshkp/barometer-operator:v2.1.1
+                imagePullPolicy: Always
+                name: barometer-operator
+                resources: {}
+              serviceAccountName: barometer-operator
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - serviceaccounts
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          verbs:
+          - '*'
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - '*'
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - servicemonitors
+          verbs:
+          - get
+          - create
+        - apiGroups:
+          - apps
+          resourceNames:
+          - barometer-operator
+          resources:
+          - deployments/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - collectd.barometer.com
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        serviceAccountName: barometer-operator
+    strategy: deployment
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  maturity: alpha
+  provider: {}
+  version: 0.1.0

@@ -1,19 +1,18 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: collectd-config
+  name: collectd-ds-config
   namespace: default
 data:
+  node.collectd.config: |-
 
-  node-collectd.conf: |-
-
-    FQDNLookup true
+    FQDNLookup fase
 
     LoadPlugin syslog
 
     <Plugin syslog>
 
-       LogLevel debug
+       LogLevel error
 
     </Plugin>
 
@@ -22,10 +21,17 @@ data:
 
     LoadPlugin memory
 
+    LoadPlugin logfile
     
+    <Plugin "logfile">
+      LogLevel "info"
+      File "\/var\/log\/collectd.log"
+      Timestamp true
+    </Plugin>
+
     <Plugin "cpu">
 
-      Interval 5
+      Interval 20
 
       ReportByState false
 
@@ -40,7 +46,7 @@ data:
 
       Interval 30
 
-      ValuesAbsolute false
+      ValuesAbsolute true
 
       ValuesPercentage true
 

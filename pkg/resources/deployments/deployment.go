@@ -18,8 +18,8 @@ func labelsForCollectd(name string) map[string]string {
 	}
 }
 
-// Create NewDaemonSetForCR method to create daemonset
-func NewDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
+//NewDefaultDaemonSetForCR  Create default
+func NewDefaultDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
 	labels := selectors.LabelsForCollectd(m.Name)
 
 	ds := &appsv1.DaemonSet{
@@ -39,13 +39,49 @@ func NewDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
 					Annotations: map[string]string{
-						"configHash": "",
+						"cmversion": "",
 					},
 				},
 				Spec: corev1.PodSpec{
 					HostNetwork:        true,
 					ServiceAccountName: m.Name,
-					Containers:         []corev1.Container{containers.ContainerForCollectd(m)},
+					Containers:         []corev1.Container{containers.DefaultContainerForCollectd(m)},
+				},
+			},
+		},
+	}
+
+	return ds
+}
+
+//NewDaemonSetForCR Create NewDaemonSetForCR method to create daemonset
+func NewDaemonSetForCR(m *v1alpha1.Collectd, cmVersion string) *appsv1.DaemonSet {
+	labels := selectors.LabelsForCollectd(m.Name)
+
+	ds := &appsv1.DaemonSet{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "DaemonSet",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      m.Name,
+			Namespace: m.Namespace,
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+					Annotations: map[string]string{
+						"cmversion": "",
+					},
+				},
+				Spec: corev1.PodSpec{
+					HostNetwork:        true,
+					ServiceAccountName: m.Name,
+					Containers:         []corev1.Container{containers.ContainerForCollectd(m, cmVersion)},
 				},
 			},
 		},
@@ -60,7 +96,7 @@ func NewDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  "config",
+							Key:  "node.collectd.config",
 							Path: "collectd.conf",
 						},
 					},

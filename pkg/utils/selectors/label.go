@@ -4,25 +4,37 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+//LabelApplicationKey ..
 const (
-	LabelAppKey = "application"
+	LabelApplicationKey = "application"
+	LabelAppKey         = "app"
 
 	LabelResourceKey = "collectd_cr"
+	LabelAppValue    = "collectd"
 )
 
-// Set labels in a map
+//LabelsForCollectd ... Set labels in a map
 func LabelsForCollectd(name string) map[string]string {
 	return map[string]string{
-		LabelAppKey:      name,
-		LabelResourceKey: name,
+		LabelAppKey:         name,
+		LabelResourceKey:    name,
+		LabelApplicationKey: LabelAppValue,
 	}
 }
 
-// return a selector that matches resources for a Collectd resource
+//ResourcesByCollectdName return a selector that matches resources for a Collectd resource
 func ResourcesByCollectdName(name string) labels.Selector {
 	set := map[string]string{
 		LabelAppKey:      name,
 		LabelResourceKey: name,
+	}
+	return labels.SelectorFromSet(set)
+}
+
+//ResourcesByApplicationKey ...
+func ResourcesByApplicationKey() labels.Selector {
+	set := map[string]string{
+		LabelAppKey: LabelAppValue,
 	}
 	return labels.SelectorFromSet(set)
 }

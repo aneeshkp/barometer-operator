@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Create NewConfigMapForCR method to create configmap
+//NewConfigMapForCR ... Create NewConfigMapForCR method to create configmap
 func NewConfigMapForCR(m *v1alpha1.Collectd) *corev1.ConfigMap {
 	config := configs.ConfigForCollectd(m)
 	configMap := &corev1.ConfigMap{
@@ -20,7 +20,7 @@ func NewConfigMapForCR(m *v1alpha1.Collectd) *corev1.ConfigMap {
 			Namespace: m.Namespace,
 		},
 		Data: map[string]string{
-			"config": config,
+			"node.collectd.config": config,
 		},
 	}
 
