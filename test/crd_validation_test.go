@@ -13,7 +13,7 @@ import (
 )
 
 var crdTypeMap = map[string]interface{}{
-	"collectd_v1alpha1_collectd_crd.yaml": &collectdv1alpha1.Collectd{},
+	"collectd.opnfv.org_barometers_crd.yaml": &collectdv1alpha1.Barometer{},
 }
 
 func TestCRDSchemas(t *testing.T) {
@@ -33,7 +33,7 @@ func TestCRDSchemas(t *testing.T) {
 
 func TestSampleCustomResources(t *testing.T) {
 
-	var crFileName, crdFileName string = "collectd_v1alpha1_collectd_cr.yaml", "collectd_v1alpha1_collectd_crd.yaml"
+	var crFileName, crdFileName string = "collectd.opnfv.org_v1alpha1_barometer_cr.yaml", "collectd.opnfv.org_barometers_crd.yaml"
 	assert.NotEmpty(t, crdFileName, "No matching CRD file found for CR suffixed: %s", crFileName)
 
 	schema := getSchema(t, crdFileName)

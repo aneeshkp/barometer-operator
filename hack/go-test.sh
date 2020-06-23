@@ -7,4 +7,4 @@ if [[ -z ${CI} ]]; then
 fi
 
 #local test
-GOCACHE=off go test `go list ./test/... | grep -v e2e`
+GO111MODULE=on go test `go list ./test/... | grep -v e2e`

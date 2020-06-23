@@ -19,7 +19,7 @@ func labelsForCollectd(name string) map[string]string {
 }
 
 //NewDefaultDaemonSetForCR  Create default
-func NewDefaultDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
+func NewDefaultDaemonSetForCR(m *v1alpha1.Barometer) *appsv1.DaemonSet {
 	labels := selectors.LabelsForCollectd(m.Name)
 
 	ds := &appsv1.DaemonSet{
@@ -44,7 +44,7 @@ func NewDefaultDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
 				},
 				Spec: corev1.PodSpec{
 					HostNetwork:        true,
-					ServiceAccountName: m.Name,
+					ServiceAccountName: "barometer-operator",
 					Containers:         []corev1.Container{containers.DefaultContainerForCollectd(m)},
 				},
 			},
@@ -55,7 +55,7 @@ func NewDefaultDaemonSetForCR(m *v1alpha1.Collectd) *appsv1.DaemonSet {
 }
 
 //NewDaemonSetForCR Create NewDaemonSetForCR method to create daemonset
-func NewDaemonSetForCR(m *v1alpha1.Collectd, cmVersion string) *appsv1.DaemonSet {
+func NewDaemonSetForCR(m *v1alpha1.Barometer, cmVersion string) *appsv1.DaemonSet {
 	labels := selectors.LabelsForCollectd(m.Name)
 
 	ds := &appsv1.DaemonSet{
@@ -80,7 +80,7 @@ func NewDaemonSetForCR(m *v1alpha1.Collectd, cmVersion string) *appsv1.DaemonSet
 				},
 				Spec: corev1.PodSpec{
 					HostNetwork:        true,
-					ServiceAccountName: m.Name,
+					ServiceAccountName: "barometer-operator",
 					Containers:         []corev1.Container{containers.ContainerForCollectd(m, cmVersion)},
 				},
 			},
@@ -96,7 +96,7 @@ func NewDaemonSetForCR(m *v1alpha1.Collectd, cmVersion string) *appsv1.DaemonSet
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  "node.collectd.config",
+							Key:  "node.barometer.config",
 							Path: "collectd.conf",
 						},
 					},

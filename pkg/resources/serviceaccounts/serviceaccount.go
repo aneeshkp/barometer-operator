@@ -7,14 +7,14 @@ import (
 )
 
 //NewServiceAccountForCR ... Create NewServiceAccountForCR method to create serviceaccount
-func NewServiceAccountForCR(m *v1alpha1.Collectd) *corev1.ServiceAccount {
+func NewServiceAccountForCR(m *v1alpha1.Barometer) *corev1.ServiceAccount {
 	serviceaccount := &corev1.ServiceAccount{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "ServiceAccount",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
+			Name:      "barometer-opereator",
 			Namespace: m.Namespace,
 		},
 	}

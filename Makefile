@@ -2,17 +2,17 @@
 .PHONY: all
 all: build
 
-.PHONY: dep
-dep:
-	./hack/go-dep.sh
 
 .PHONY: format
 format:
 	./hack/go-fmt.sh
 
 .PHONY: sdk-generate
-sdk-generate: dep
+sdk-generate:
 	operator-sdk generate k8s
+
+tidy: ## Update dependencies
+	$(Q)go mod tidy -v
 
 .PHONY: vet
 vet:
