@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	log = logf.Log.WithName("Collectd_Containers")
+	log = logf.Log.WithName("Barometer_Containers")
 )
 
 //CheckCollectdContainer ...
@@ -31,7 +31,7 @@ func CheckCollectdContainer(desired *corev1.Container, actual *corev1.Container)
 }
 
 //ContainerForCollectd ...
-func ContainerForCollectd(m *v1alpha1.Collectd, cmRevision string) corev1.Container {
+func ContainerForCollectd(m *v1alpha1.Barometer, cmRevision string) corev1.Container {
 	var image string
 	if m.Spec.DeploymentPlan.Image != "" {
 		image = m.Spec.DeploymentPlan.Image
@@ -62,7 +62,7 @@ func ContainerForCollectd(m *v1alpha1.Collectd, cmRevision string) corev1.Contai
 }
 
 //DefaultContainerForCollectd  ...
-func DefaultContainerForCollectd(m *v1alpha1.Collectd) corev1.Container {
+func DefaultContainerForCollectd(m *v1alpha1.Barometer) corev1.Container {
 	var image string
 	if m.Spec.DeploymentPlan.Image != "" {
 		image = m.Spec.DeploymentPlan.Image

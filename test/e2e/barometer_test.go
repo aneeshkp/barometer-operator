@@ -16,30 +16,31 @@ import (
 
 var (
 	retryInterval        = time.Second * 5
-	timeout              = time.Second * 600
+	timeout              = time.Second * 120
 	cleanupRetryInterval = time.Second * 1
-	cleanupTimeout       = time.Second * 5
+	cleanupTimeout       = time.Second * 10
+	operatorName         = "barometer-operator"
 )
 
-func TestCollectd(t *testing.T) {
+func TestBarometer(t *testing.T) {
 	//Register with framework schema
-	collectdList := &v1alpha1.CollectdList{
+	barometerList := &v1alpha1.BarometerList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Collectd",
-			APIVersion: "collectd.barometer.com/v1alpha1",
+			Kind:       "Barometer",
+			APIVersion: "collectd.opnfv.org/v1alpha1",
 		},
 	}
-	err := framework.AddToFrameworkScheme(apis.AddToScheme, collectdList)
+	err := framework.AddToFrameworkScheme(apis.AddToScheme, barometerList)
 	if err != nil {
 		t.Fatalf("failed to add custom resource scheme to framework: %v", err)
 	}
 	// run subtests
-	t.Run("collectd-group", func(t *testing.T) {
-		t.Run("collectd", CollectdCluster)
+	t.Run("barometer-group", func(t *testing.T) {
+		t.Run("Cluster", BarometerCluster)
 	})
 }
 
-func CollectdCluster(t *testing.T) {
+func BarometerCluster(t *testing.T) {
 	t.Parallel()
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
@@ -48,41 +49,41 @@ func CollectdCluster(t *testing.T) {
 		t.Fatalf("failed to initialize cluster resources: %v", err)
 	}
 	t.Log("Initialized cluster resources")
-	namespace, err := ctx.GetNamespace()
+	namespace, err := ctx.GetOperatorNamespace()
 	if err != nil {
 		t.Fatal(err)
 	}
 	// get global framework variables
 	f := framework.Global
 	// wait for barometer-operator to be ready
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "barometer-operator", 1, retryInterval, timeout)
-	if err != nil {
+	if err := e2eutil.WaitForDeployment(t, f.KubeClient, namespace, operatorName, 1, retryInterval, timeout); err != nil {
 		t.Fatal(err)
 	}
 
-	if err = collectdDeploymentTest(t, f, ctx); err != nil {
+	if err = barometerDeploymentTest(t, f, ctx); err != nil {
 		t.Fatal(err)
 	}
 }
-func collectdDeploymentTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
-	namespace, err := ctx.GetNamespace()
+func barometerDeploymentTest(t *testing.T, f *framework.Framework, ctx *framework.TestCtx) error {
+	namespace, err := ctx.GetOperatorNamespace()
 	if err != nil {
 		return fmt.Errorf("could not get namespace: %v", err)
 	}
 	// create interconnect customer resource
-	exampleCollectd := &v1alpha1.Collectd{
+	exampleCollectd := &v1alpha1.Barometer{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "Collectd",
-			APIVersion: "collectd.barometer.com/v1alpha1",
+			Kind:       "Barometer",
+			APIVersion: "collectd.opnfv.org/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "example-collectd",
+			Name:      operatorName,
 			Namespace: namespace,
 		},
-		Spec: v1alpha1.CollectdSpec{
+		Spec: v1alpha1.BarometerSpec{
 			DeploymentPlan: v1alpha1.DeploymentPlanType{
-				Size:  1,
-				Image: "opnfv/barometer",
+				Size:       1,
+				Image:      "opnfv/barometer",
+				ConfigName: "barometer-config",
 			},
 		},
 	}
@@ -92,22 +93,15 @@ func collectdDeploymentTest(t *testing.T, f *framework.Framework, ctx *framework
 		return err
 	}
 	// wait for example-collectd to reach 1 replicas
-	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-collectd", 1, retryInterval, timeout)
+	err = e2eutil.WaitForDeployment(t, f.KubeClient, namespace, operatorName, 1, retryInterval, timeout)
 	if err != nil {
 		return err
 	}
 
-	err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: "example-collectd", Namespace: namespace}, exampleCollectd)
+	err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: operatorName, Namespace: namespace}, exampleCollectd)
 	if err != nil {
 		return err
 	}
 	return nil
-	//exampleCollectd.Spec.DeploymentPlan.Size = 1
-	//err = f.Client.Update(goctx.TODO(), exampleCollectd)
-	//if err != nil {
-	//	return err
-	//}
 
-	// wait for example-interconnect to reach 4 replicas
-	//return e2eutil.WaitForDeployment(t, f.KubeClient, namespace, "example-collectd", 4, retryInterval, timeout)
 }

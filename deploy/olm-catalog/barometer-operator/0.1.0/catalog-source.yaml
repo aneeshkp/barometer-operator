@@ -4,7 +4,7 @@ items:
   - apiVersion: v1
     kind: ConfigMap
     metadata:
-      name: collectd-resources
+      name: barometer-resources
       namespace: operator-lifecycle-manager
     data:
       clusterServiceVersions: |
@@ -12,7 +12,7 @@ items:
           kind: ClusterServiceVersion
           metadata:
             annotations:
-              alm-examples: '[{"apiVersion":"collectd.barometer.com/v1alpha1","kind":"Collectd","metadata":{"labels":{"app":"collectd"},"name":"barometer-collectd-ds"},"spec":{"deploymentPlan":{"configname":"collectd-ds-config","image":"opnfv/barometer-collectd","size":1}}}]'
+              alm-examples: '[{"apiVersion":"collectd.opnfv.org/v1alpha1","kind":"Barometer","metadata":{"labels":{"app":"barometer"},"name":"barometer-collectd-ds"},"spec":{"deploymentPlan":{"configname":"barometer-config","image":"opnfv/barometer-collectd","size":1}}}]'
               capabilities: Basic Install
             name: barometer-operator.v0.1.0
             namespace: placeholder
@@ -20,8 +20,8 @@ items:
             apiservicedefinitions: {}
             customresourcedefinitions:
               owned:
-              - kind: Collectd
-                name: collectds.collectd.barometer.com
+              - kind: Barometer
+                name: barometers.collectd.opnfv.org
                 version: v1alpha1
             description: Placeholder description
             displayName: Barometer Operator
@@ -105,7 +105,7 @@ items:
                     verbs:
                     - update
                   - apiGroups:
-                    - collectd.barometer.com
+                    - collectd.opnfv.org
                     resources:
                     - '*'
                     verbs:
@@ -128,31 +128,35 @@ items:
         - apiVersion: apiextensions.k8s.io/v1beta1
           kind: CustomResourceDefinition
           metadata:
-            name: collectds.collectd.barometer.com
-            annotations:
-              composition: Daemonset, Configmap
+            name: barometers.collectd.opnfv.org
           spec:
-            group:  collectd.barometer.com
+            group: collectd.opnfv.org
             names:
-              kind: Collectd
-              listKind: CollectdList
-              plural: collectds
-              singular: collectd
+              kind: Barometer
+              listKind: BarometerList
+              plural: barometers
+              singular: barometer
             scope: Namespaced
             subresources:
               status: {}
             validation:
               openAPIV3Schema:
-                required:
-                  - spec
+                description: Barometer is the Schema for the barometers API
                 properties:
                   apiVersion:
+                    description: 'APIVersion defines the versioned schema of this representation
+                      of an object. Servers should convert recognized schemas to the latest
+                      internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
                     type: string
                   kind:
+                    description: 'Kind is a string value representing the REST resource this
+                      object represents. Servers may infer this from the endpoint the client
+                      submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
                     type: string
                   metadata:
                     type: object
                   spec:
+                    description: BarometerSpec defines the desired state of Barometer
                     type: object
                     properties:
                       deploymentPlan:
@@ -170,36 +174,14 @@ items:
                             type: string
                             description: THe name of collectd configmap
                         required:
-                        - configname
-                        - image  
+                          - configname
+                          - image
                   status:
+                    description: BarometerStatus defines the observed state of Barometer
                     type: object
                     required:
                       - conditions
-                    properties:
-                      revNumber:
-                        type: string
-                      pods:
-                        items:
-                          type: string
-                        type: array
-                      phase:
-                        type: string
-                      conditions:
-                        description: Conditions keeps most recent collectd conditions
-                        items:
-                          properties:
-                            reason:
-                              type: string
-                            transitionTime:
-                              format: date-time
-                              type: object
-                            type:
-                              type: string
-                          required:
-                          - type
-                          type: object
-                        type: array
+                type: object
             version: v1alpha1
             versions:
             - name: v1alpha1
@@ -208,7 +190,7 @@ items:
             additionalPrinterColumns:
               - name: Replicas
                 type: integer
-                description: The number of collectd launched by the operator
+                description: The number of barometer launched by the operator
                 JSONPath: .spec.deploymentPlan.size
               - name: Image
                 type: string
@@ -226,14 +208,14 @@ items:
   - apiVersion: operators.coreos.com/v1alpha1
     kind: CatalogSource
     metadata:
-      name: collectd-resources
+      name: barometer-resources
       namespace: operator-lifecycle-manager
     spec:
-      configMap: collectd-resources
-      displayName: Barometer Collectd Operators
+      configMap: barometer-resources
+      displayName: Barometer Operator
       publisher: Red Hat
       sourceType: internal
     status:
       configMapReference:
-        name: collectd-resources
+        name: barometer-resources
         namespace: operator-lifecycle-manager

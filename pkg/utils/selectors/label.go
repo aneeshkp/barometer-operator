@@ -9,8 +9,8 @@ const (
 	LabelApplicationKey = "application"
 	LabelAppKey         = "app"
 
-	LabelResourceKey = "collectd_cr"
-	LabelAppValue    = "collectd"
+	LabelResourceKey = "barometer_cr"
+	LabelAppValue    = "barometer"
 )
 
 //LabelsForCollectd ... Set labels in a map

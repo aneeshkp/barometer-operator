@@ -9,7 +9,7 @@ const (
 )
 
 //ConfigForCollectd  ....
-func ConfigForCollectd(m *v1alpha1.Collectd) string {
+func ConfigForCollectd(m *v1alpha1.Barometer) string {
 	config := `
         FQDNLookup false
         LoadPlugin syslog
@@ -43,8 +43,4 @@ func ConfigForCollectd(m *v1alpha1.Collectd) string {
         `
 	return config
 
-	//var buff bytes.Buffer
-	//collectdconfig := template.Must(template.New("collectdconfig").Parse(config))
-	//collectdconfig.Execute(&buff, m.Spec)
-	//return buff.String()
 }

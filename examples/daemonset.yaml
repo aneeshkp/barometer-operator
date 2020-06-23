@@ -4,11 +4,11 @@ kind: DaemonSet
 
 metadata:
 
-  name: collectd-node-agent
+  name: barometer-node-agent
 
   labels:
 
-    app: collectd-node-agent
+    app: barometer-node-agent
 
 spec:
 
@@ -18,7 +18,7 @@ spec:
 
       labels:
 
-        name: collectd-node-agent
+        name: barometer-node-agent
 
     spec:
 
@@ -27,7 +27,7 @@ spec:
     
       containers:
 
-      - name: collectd
+      - name: barometer
 
         image: opnfv/barometer-collectd
         #command: ["/opt/collectd/sbin/collectd"]
@@ -36,7 +36,7 @@ spec:
           privileged: true
 
         volumeMounts:
-        - name: collectd-config-volume
+        - name: barometer-config-volume
           mountPath: /opt/collectd/etc/ 
           #mountPath: /etc/collectd
 
@@ -53,11 +53,11 @@ spec:
         #  readOnly: true
 
       volumes:
-      - name: collectd-config-volume
+      - name: barometer-config-volume
         configMap:
-          name: collectd-config
+          name: barometer-config
           items:
-          - key: node-collectd.conf
+          - key: node-barometer.conf
             path: collectd.conf
 
       #- name: proc

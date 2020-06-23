@@ -1,15 +1,15 @@
-package collectd
+package barometer
 
 import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-
-	collectdv1alpha1 "github.com/aneeshkp/barometer-operator/pkg/apis/collectd/v1alpha1"
 	"github.com/aneeshkp/barometer-operator/pkg/resources/configmaps"
 	"github.com/aneeshkp/barometer-operator/pkg/resources/deployments"
 	"github.com/aneeshkp/barometer-operator/pkg/resources/serviceaccounts"
+
+	collectdv1alpha1 "github.com/aneeshkp/barometer-operator/pkg/apis/collectd/v1alpha1"
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -21,18 +21,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const maxConditions = 6
 
 var OperatorName = "UNKNOW"
-var (
-	log = logf.Log.WithName("controller_collectd")
-)
+
+var log = logf.Log.WithName("controller_barometer")
 
 //ReturnValues ...
 type ReturnValues struct {
@@ -46,138 +45,73 @@ type ReturnValues struct {
 * business logic.  Delete these comments after modifying this file.*
  */
 
-// Add creates a new Collectd Controller and adds it to the Manager. The Manager will set fields on the Controller
+// Add creates a new Barometer Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
 func Add(mgr manager.Manager) error {
 	return add(mgr, newReconciler(mgr))
 }
 
-// newReconciler returns a new reconciappsle.Reconciler
+// newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileCollectd{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileBarometer{client: mgr.GetClient(), scheme: mgr.GetScheme()}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("collectd-controller", mgr, controller.Options{Reconciler: r})
+	c, err := controller.New("barometer-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
 		return err
 	}
 
-	// Watch for changes to primary resource Collectd
-	err = c.Watch(&source.Kind{Type: &collectdv1alpha1.Collectd{}}, &handler.EnqueueRequestForObject{})
+	// Watch for changes to primary resource Barometer
+	err = c.Watch(&source.Kind{Type: &collectdv1alpha1.Barometer{}}, &handler.EnqueueRequestForObject{})
 	if err != nil {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Collectd
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &collectdv1alpha1.Collectd{},
-	})
-	if err != nil {
-		return err
-	}
-	/*	mapFn := handler.ToRequestsFunc(
-			func(a handler.MapObject) []reconcile.Request {
-				return []reconcile.Request{
-					{NamespacedName: types.NamespacedName{
-						Name:      a.Meta.GetName() + "-1",
-						Namespace: a.Meta.GetNamespace(),
-					}},
-					{NamespacedName: types.NamespacedName{
-						Name:      a.Meta.GetName() + "-2",
-						Namespace: a.Meta.GetNamespace(),
-					}},
-				}
-			})
-
-		p := predicate.Funcs{
-			UpdateFunc: func(e event.UpdateEvent) bool {
-				// The object doesn't contain label "foo", so the event will be
-				// ignored.
-				if _, ok := e.MetaOld.GetLabels()["foo"]; !ok {
-					return false
-				}
-				return e.ObjectOld != e.ObjectNew
-			},
-			CreateFunc: func(e event.CreateEvent) bool {
-				if _, ok := e.Meta.GetLabels()["foo"]; !ok {
-					return false
-				}
-				return true
-			},
-		}
-	*/
 	configFn := handler.ToRequestsFunc(func(configMapObject handler.MapObject) []reconcile.Request {
-		instance := &collectdv1alpha1.Collectd{}
+		instance := &collectdv1alpha1.Barometer{}
 		//instances := &collectdv1alpha1.CollectdList{}
 		depKey := types.NamespacedName{Namespace: configMapObject.Meta.GetNamespace(), Name: OperatorName}
 		log.Info("OPERATOR_NAME")
 		log.Info(OperatorName)
 		err := mgr.GetClient().Get(context.TODO(), depKey, instance)
 		if err != nil {
-			log.Info("Could not find collectd instance, for reconciling configmap.")
+			log.Info("Could not find  barometer (collectd)  instance, for reconciling configmap.")
 			return []reconcile.Request{}
 		}
 		return []reconcile.Request{
-			{NamespacedName: types.NamespacedName{
-				Name:      OperatorName,
-				Namespace: configMapObject.Meta.GetNamespace(),
-			}},
+			{
+				NamespacedName: types.NamespacedName{
+					Name:      OperatorName,
+					Namespace: configMapObject.Meta.GetNamespace(),
+				}},
 		}
-		/*err = mgr.GetClient().List(context.TODO(), &client.ListOptions{LabelSelector: selectors.ResourcesByApplicationKey()}, instances)
-
-		if err != nil {
-			log.Info("Could not find collectd instance, unable to reconcile configmap")
-			return []reconcile.Request{}
-		}
-		var keys []reconcile.Request
-		log.Info(strconv.Itoa(len(instances.Items)))
-		for _, inst := range instances.Items {
-			log.Info("Configuration changed adding to reconcile")
-			if inst.Spec.DeploymentPlan.ConfigName == configMapObject.Meta.GetName() {
-				keys = append(keys, reconcile.Request{
-					NamespacedName: types.NamespacedName{
-						Name:      inst.GetName(),
-						Namespace: inst.GetNamespace(),
-					},
-				})
-			}
-
-		}
-
-		return keys*/
-
 	})
-
 	// Watch for daemonset
 	err = c.Watch(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &collectdv1alpha1.Collectd{},
+		OwnerType:    &collectdv1alpha1.Barometer{},
 	})
 
 	// Watch for changes to secondary resource ServiceAccount and requeue the owner Interconnect
 	err = c.Watch(&source.Kind{Type: &corev1.ServiceAccount{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &collectdv1alpha1.Collectd{},
+		OwnerType:    &collectdv1alpha1.Barometer{},
 	})
 	if err != nil {
 		return err
 	}
-
 	// TODO(user): Modify this to be the types you create that are owned by the primary resource
-	// Watch for changes to secondary resource Pods and requeue the owner Collectd
+	// Watch for changes to secondary resource Pods and requeue the owner Barometer
 	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
-		OwnerType:    &collectdv1alpha1.Collectd{},
+		OwnerType:    &collectdv1alpha1.Barometer{},
 	})
 	if err != nil {
 		return err
 	}
-
 	//watch for secondary resources not owned by CR
 	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestsFromMapFunc{
 		ToRequests: configFn})
@@ -189,30 +123,30 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	return nil
 }
 
-var _ reconcile.Reconciler = &ReconcileCollectd{}
+// blank assignment to verify that ReconcileBarometer implements reconcile.Reconciler
+var _ reconcile.Reconciler = &ReconcileBarometer{}
 
-// ReconcileCollectd reconciles a Collectd object
-type ReconcileCollectd struct {
+// ReconcileBarometer reconciles a Barometer object
+type ReconcileBarometer struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
 	client client.Client
 	scheme *runtime.Scheme
 }
 
-// Reconcile reads that state of the cluster for a Collectd object and makes changes based on the state read
-// and what is in the Collectd.Spec
+// Reconcile reads that state of the cluster for a Barometer object and makes changes based on the state read
+// and what is in the Barometer.Spec
 // TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
 // a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileBarometer) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	reqLogger.Info("Reconciling Collectd")
+	reqLogger.Info("Reconciling Barometer")
 
-	// Fetch the Collectd instance
-	instance := &collectdv1alpha1.Collectd{}
-
+	// Fetch the Barometer instance
+	instance := &collectdv1alpha1.Barometer{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -224,6 +158,7 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+
 	OperatorName = instance.GetName()
 	// Assign the generated resource version to the status
 	if instance.Status.RevNumber == "" {
@@ -238,12 +173,6 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	} else if returnValues.reQueue {
 		return reconcile.Result{Requeue: true}, nil
 	}
-	/*returnValues = r.ReconcileConfigMap(instance, reqLogger)
-	if returnValues.err != nil {
-		return reconcile.Result{}, err
-	} else if returnValues.reQueue {
-		return reconcile.Result{Requeue: true}, nil
-	}*/
 
 	returnValues = r.CheckForConfigMap(instance, reqLogger)
 	if returnValues.err != nil {
@@ -251,9 +180,7 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 	} else if returnValues.reQueue {
 		return reconcile.Result{Requeue: true}, nil
 	}
-	//desiredConfigMap := &corev1.ConfigMap{} // where to ge desired configmap
-	//eq := reflect.DeepEqual(currentConfigMap, currentConfigMap)
-	//returnValues = r.ReconcileDeployment(instance, returnValues.hash256String, reqLogger)
+
 	returnValues = r.ReconcileDeployment(instance, returnValues.hash256String, reqLogger)
 	if returnValues.err != nil {
 		return reconcile.Result{}, err
@@ -261,13 +188,8 @@ func (r *ReconcileCollectd) Reconcile(request reconcile.Request) (reconcile.Resu
 		return reconcile.Result{Requeue: true}, nil
 	}
 
-	//size := instance.Spec.DeploymentPlan.Size
-
-	// Pod already exists - don't requeue
-
 	return reconcile.Result{}, nil
 }
-
 func addCondition(conditions []collectdv1alpha1.CollectdCondition, condition collectdv1alpha1.CollectdCondition) []collectdv1alpha1.CollectdCondition {
 	size := len(conditions) + 1
 	first := 0
@@ -278,7 +200,7 @@ func addCondition(conditions []collectdv1alpha1.CollectdCondition, condition col
 }
 
 //UpdateCondition ...
-func (r *ReconcileCollectd) UpdateCondition(instance *collectdv1alpha1.Collectd, reason string, reqLogger logr.Logger) error {
+func (r *ReconcileBarometer) UpdateCondition(instance *collectdv1alpha1.Barometer, reason string, reqLogger logr.Logger) error {
 	// update status
 	// update status
 	condition := collectdv1alpha1.CollectdCondition{
@@ -292,7 +214,7 @@ func (r *ReconcileCollectd) UpdateCondition(instance *collectdv1alpha1.Collectd,
 }
 
 //ReconcileServiceAccount  ...
-func (r *ReconcileCollectd) ReconcileServiceAccount(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) ReturnValues {
+func (r *ReconcileBarometer) ReconcileServiceAccount(instance *collectdv1alpha1.Barometer, reqLogger logr.Logger) ReturnValues {
 	svcaccnt := serviceaccounts.NewServiceAccountForCR(instance)
 
 	// Set OutgoingPortal instance as the owner and controller
@@ -320,7 +242,7 @@ func (r *ReconcileCollectd) ReconcileServiceAccount(instance *collectdv1alpha1.C
 }
 
 //CheckForConfigMap  ..If configmap doesn't exist , do not deploy/
-func (r *ReconcileCollectd) CheckForConfigMap(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) ReturnValues {
+func (r *ReconcileBarometer) CheckForConfigMap(instance *collectdv1alpha1.Barometer, reqLogger logr.Logger) ReturnValues {
 	configMapFound := &corev1.ConfigMap{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentPlan.ConfigName, Namespace: instance.Namespace}, configMapFound)
@@ -355,7 +277,7 @@ func (r *ReconcileCollectd) CheckForConfigMap(instance *collectdv1alpha1.Collect
 }
 
 //ReconcileConfigMap  ..DON'T use this function for now... /
-func (r *ReconcileCollectd) ReconcileConfigMap(instance *collectdv1alpha1.Collectd, reqLogger logr.Logger) ReturnValues {
+func (r *ReconcileBarometer) ReconcileConfigMap(instance *collectdv1alpha1.Barometer, reqLogger logr.Logger) ReturnValues {
 	configMapFound := &corev1.ConfigMap{}
 
 	err := r.client.Get(context.TODO(), types.NamespacedName{Name: instance.Spec.DeploymentPlan.ConfigName, Namespace: instance.Namespace}, configMapFound)
@@ -397,7 +319,7 @@ func (r *ReconcileCollectd) ReconcileConfigMap(instance *collectdv1alpha1.Collec
 }
 
 //ReconcileDeployment  ...
-func (r *ReconcileCollectd) ReconcileDeployment(instance *collectdv1alpha1.Collectd, cmVersion string, reqLogger logr.Logger) ReturnValues {
+func (r *ReconcileBarometer) ReconcileDeployment(instance *collectdv1alpha1.Barometer, cmVersion string, reqLogger logr.Logger) ReturnValues {
 
 	//check if deployment already exists
 	depFound := &appsv1.DaemonSet{}
@@ -408,7 +330,7 @@ func (r *ReconcileCollectd) ReconcileDeployment(instance *collectdv1alpha1.Colle
 		// Define a new deployment
 		if cmVersion == "" {
 			dep = deployments.NewDefaultDaemonSetForCR(instance)
-			reqLogger.Info("Creating a new Deployment with default configurations (use configmap to modify collectd conf)", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
+			reqLogger.Info("Creating a new Deployment with default configurations (use configmap to modify Barometer conf)", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		} else {
 			dep = deployments.NewDaemonSetForCR(instance, cmVersion)
 			reqLogger.Info("Creating a new Deployment with configMap", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)

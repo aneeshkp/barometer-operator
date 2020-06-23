@@ -50,13 +50,13 @@ $ kubectl create -f deploy/role_binding.yaml
 Deploy the CRD to the cluster that defines the Collectd resource.
 
 ```
-$ kubectl create -f deploy/crds/collectd_v1alpha1_collectd_crd.yaml
+$ kubectl create -f deploy/crds/collectd.opnfv.org_barometers_crd.yaml
 ```
 You will be able to confirm that the new CRD has been registered in the cluster and you can review its details.
 
 ```
 $ kubectl get crd
-$ kubectl describe crd collectds.collectd.barometer.com
+$ kubectl describe crd barometers.collectd.opnfv.org
 ```
 
 
@@ -82,31 +82,31 @@ $ kubectl describe pod -l name=barometer-operator
 ```
 
  ```
-$ kubectl create -f deploy/crds/collectd_v1alpha1_collectd_cr.yaml
+$ kubectl create -f deploy/crds/collectd.opnfv.org_v1alpha1_barometer_cr.yaml
 ```
 
  ```
 $ cat <<EOF | kubectl create -f - 
-apiVersion: collectd.barometer.com/v1alpha1
-kind: Collectd
+apiVersion:collectd.opnfv.org/v1alpha1
+kind: Barometer
 metadata:
   name: barometer-collectd-ds
   labels:
-    app: collectd
+    app: barometer
 spec:
   # Add fields here
   deploymentPlan: 
     image: opnfv/barometer-collectd
     size: 1
-    configname: collectd-ds-config    
+    configname: barometer-config    
 ```
 
 
-The operator will create a deployment of  collectd as daemon using default collectd.conf,To make changes to collectd configuration , you may apply configuration via configmap , where configmap name is matched with deployment.configname .
+The operator will create a deployment of  barometer as daemon using default collectd.conf,To make changes to collectd configuration , you may apply configuration via configmap , where configmap name is matched with deployment.configname .
 which can be viewed by running .
 
 ```
-kubectl get collectd -A
+kubectl get barometer -A
 ```
 
 
@@ -133,7 +133,6 @@ Clone this repository to a location on your workstation such as `$GOPATH/src/git
 
 ```
 $ cd $GOPATH/src/github.com/ORG/REPO/barometer-operator
-$ dep ensure && dep status
 ```
 
 #### Run Operator Locally
@@ -144,14 +143,14 @@ Ensure the service account, role, role bindings and CRD are added to  the local 
 $ kubectl create -f deploy/service_account.yaml
 $ kubectl create -f deploy/role.yaml
 $ kubectl create -f deploy/role_binding.yaml
-$ kubectl create -f deploy/crds/collectd_v1alpha1_collectd_crd
+$ kubectl create -f deploy/crds/collectd.opnfv.org_barometers_crd.yaml
 ```
 
 Start the operator locally for development.
 
 ```
 $ export OPERATOR_NAME=barometer-operator
-$ operator-sdk up local
+$ operator-sdk up test local
 ```
 
 Create a  resource to observe and test your changes.
@@ -167,7 +166,7 @@ spec:
   deploymentPlan: 
     image: opnfv/barometer-collectd
     size: 1
-    configname: collectd-ds-config    
+    configname: barometer-config    
 EOF
 ```
 
@@ -176,12 +175,12 @@ As you make local changes to the code, restart the operator to enact the changes
 ### Clean up
 ```
 # Cleanup
-$ kubectl delete -f deploy/crds/collectd_v1alpha1_collectd_cr.yaml
+$ kubectl delete -f deploy/crds/collectd.opnfv.org_v1alpha1_barometer_cr.yaml
 $ kubectl delete -f deploy/operator.yaml
 $ kubectl delete -f deploy/role.yaml
 $ kubectl delete -f deploy/role_binding.yaml
 $ kubectl delete -f deploy/service_account.yaml
-$ kubectl delete -f deploy/crds/collectd_v1alpha1_collectd_crd.yaml 
+$ kubectl delete -f deploy/crds/collectd.opnfv.org_barometers_crd.yaml
 
 ```
 
@@ -215,5 +214,5 @@ Ensure the Operator Lifecycle Manager is installed in the local cluster.  By def
 
 ```
 $ ./hack/catalog-source.sh [namespace]
-$ oc apply -f deploy/olm-catalog/collectd-barometer-operator/0.1.0/catalog-source.yaml
+$ oc apply -f deploy/olm-catalog/barometer-operator/0.1.0/catalog-source.yaml
 ```

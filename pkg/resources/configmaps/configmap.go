@@ -8,7 +8,7 @@ import (
 )
 
 //NewConfigMapForCR ... Create NewConfigMapForCR method to create configmap
-func NewConfigMapForCR(m *v1alpha1.Collectd) *corev1.ConfigMap {
+func NewConfigMapForCR(m *v1alpha1.Barometer) *corev1.ConfigMap {
 	config := configs.ConfigForCollectd(m)
 	configMap := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -20,7 +20,7 @@ func NewConfigMapForCR(m *v1alpha1.Collectd) *corev1.ConfigMap {
 			Namespace: m.Namespace,
 		},
 		Data: map[string]string{
-			"node.collectd.config": config,
+			"node.barometer.config": config,
 		},
 	}
 
