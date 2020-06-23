@@ -1,10 +1,10 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: collectd-ds-config
+  name: barometer-config
   namespace: default
 data:
-  node.collectd.config: |-
+  node.barometer.config: |-
 
     FQDNLookup fase
 
@@ -12,7 +12,7 @@ data:
 
     <Plugin syslog>
 
-       LogLevel error
+       LogLevel debug
 
     </Plugin>
 

@@ -1,0 +1,12 @@
+apiVersion: collectd.opnfv.org/v1alpha1
+kind: Barometer
+metadata:
+  name: barometer-collectd-ds
+labels:
+  app: barometer
+spec:
+  # Add fields here
+  deploymentPlan:
+    image: opnfv/barometer-collectd:opnfv-9.0.0
+    size: 1
+    configname: barometer-config

@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"collectd.barometer.com/v1alpha1","kind":"Collectd","metadata":{"labels":{"app":"collectd"},"name":"barometer-collectd-ds"},"spec":{"deploymentPlan":{"configname":"collectd-ds-config","image":"opnfv/barometer-collectd","size":1}}}]'
+    alm-examples: '[{"apiVersion":"collectd.opnfv.org/v1alpha1","kind":"Barometer","metadata":{"labels":{"app":"barometer"},"name":"barometer-collectd-ds"},"spec":{"deploymentPlan":{"configname":"barometer-config","image":"opnfv/barometer-collectd","size":1}}}]'
     capabilities: Basic Install
   name: barometer-operator.v0.1.0
   namespace: placeholder
@@ -10,8 +10,8 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - kind: Collectd
-      name: collectds.collectd.barometer.com
+    - kind: Barometer
+      name: barometers.collectd.opnfv.org
       version: v1alpha1
   description: Placeholder description
   displayName: Barometer Operator
@@ -95,7 +95,7 @@ spec:
           verbs:
           - update
         - apiGroups:
-          - collectd.barometer.com
+          - collectd.opnfv.org
           resources:
           - '*'
           verbs:
