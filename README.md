@@ -150,7 +150,7 @@ Start the operator locally for development.
 
 ```
 $ export OPERATOR_NAME=barometer-operator
-$ operator-sdk up test local
+$ operator-sdk  run local
 ```
 
 Create a  resource to observe and test your changes.
@@ -202,7 +202,7 @@ $ make test
 ```
 
 Cluster-based test. 
-Ensure there is a cluster running before running the test.
+Ensure there is a cluster running before running the test and replace image in operator.yml
 
 ```
 $ make cluster-test
