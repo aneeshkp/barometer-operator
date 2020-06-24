@@ -4,7 +4,6 @@ metadata:
   name: barometer-operator-crb
 subjects:
 - kind: ServiceAccount
-  namespace: default
   name: barometer-operator
 roleRef:
   kind: ClusterRole
