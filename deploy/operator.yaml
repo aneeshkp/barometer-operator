@@ -16,8 +16,8 @@ spec:
       containers:
         - name: barometer-operator
           # Replace this with the built image name
-          image: quay.io/aneeshkp/barometer-operator:latest
-          #image: REPLACE_IMAGE
+          #image: quay.io/aneeshkp/barometer-operator:latest
+          image: REPLACE_IMAGE
           command:
           - barometer-operator
           imagePullPolicy: Always
